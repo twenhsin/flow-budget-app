@@ -133,13 +133,15 @@ onUnmounted(() => stopCamera())
 }
 
 .overlay-top {
-  flex: 1.8;
+  flex-shrink: 0;
+  height: 100px;
   background: rgba(0, 0, 0, 0.5);
 }
 
 .overlay-middle {
+  flex: 1;
   display: flex;
-  height: 240px;
+  min-height: 0;
 }
 
 .overlay-side {
@@ -148,13 +150,15 @@ onUnmounted(() => stopCamera())
 }
 
 .scan-frame {
-  width: 280px;
+  width: 260px;
+  flex-shrink: 0;
   position: relative;
   /* transparent — no background */
 }
 
 .overlay-bottom {
-  flex: 1;
+  flex-shrink: 0;
+  height: 160px;
   background: rgba(0, 0, 0, 0.5);
 }
 
