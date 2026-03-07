@@ -22,19 +22,21 @@
           readonly
           @click="goTextRecord"
         >
-        <button class="icon-btn" title="語音" @click="goVoiceRecord">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" y1="19" x2="12" y2="23" />
-          </svg>
-        </button>
-        <button class="icon-btn" title="拍照" @click="goCamera">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-        </button>
+        <div class="input-icons">
+          <button class="icon-btn" title="語音" @click.stop="goVoiceRecord">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+            </svg>
+          </button>
+          <button class="icon-btn" title="拍照" @click.stop="goCamera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -87,7 +89,7 @@ const goCamera = () => {
 
 .home-header {
   padding: 52px 24px 0;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-soft);
   letter-spacing: 0.05em;
 }
@@ -139,13 +141,14 @@ const goCamera = () => {
   align-items: center;
   background: rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-pill);
-  padding: 8px 12px 8px 20px;
-  gap: 8px;
+  padding: 8px 16px 8px 20px;
   box-shadow: 0 2px 16px rgba(196, 98, 45, 0.1);
+  overflow: hidden;
 }
 
 .input-bar input {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   font-family: 'Noto Sans TC', sans-serif;
@@ -160,6 +163,13 @@ const goCamera = () => {
   color: var(--text-soft);
 }
 
+.input-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .icon-btn {
   width: 36px;
   height: 36px;
@@ -170,7 +180,7 @@ const goCamera = () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text-soft);
+  color: #EC844C;
   transition: all 0.18s;
   flex-shrink: 0;
 }
