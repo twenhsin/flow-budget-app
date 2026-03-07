@@ -1,0 +1,120 @@
+:root {
+  --bg-top: #FDF0E6;
+  --bg-bottom: #F5C8A8;
+  --accent: #E07A4F;
+  --accent-dark: #C4622D;
+  --text: #8B5E3C;
+  --text-soft: #C4A882;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-solid: #FFF8F2;
+  --border: rgba(196, 168, 130, 0.25);
+  --disabled: #D4C4B4;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-pill: 100px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 300;
+  background: #F5C8A8;
+  color: var(--text);
+  min-height: 100dvh;
+}
+
+input,
+select,
+textarea {
+  user-select: text;
+}
+
+/* Page transitions */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+@keyframes rowIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mic-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes timer-shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
