@@ -6,13 +6,13 @@
         <div class="listen-dot" />
         <div class="listen-dot" />
       </div>
-      <span class="listen-text">我正在聆聽</span>
+      <span class="listen-text">{{ transcript || '我正在聆聽' }}</span>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-defineProps<{ visible: boolean }>()
+defineProps<{ visible: boolean; transcript?: string }>()
 </script>
 
 <style scoped>

@@ -10,5 +10,5 @@ export interface BudgetRecord {
 export type EntryMode = 'voice' | 'text' | 'camera'
 export type HomeTab = 'record' | 'total' | 'analysis'
 
-export const CATEGORIES = ['飲品', '餐飲', '點心', '交通', '購物', '娛樂', '其他'] as const
-export type Category = (typeof CATEGORIES)[number]
+export const CATEGORIES = ['餐飲', '飲料', '點心', '居住', '休閒', '交通', '通訊', '其他']
+export type Category = string

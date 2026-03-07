@@ -1,11 +1,8 @@
 <template>
   <div class="home-screen">
     <div class="home-header">讓 AI 幫你整理每一筆消費</div>
+    <h1 class="home-headline">紀錄，<br>分析，<br>掌握消費</h1>
     <div class="home-hero">
-      <h1 class="home-headline">
-        紀錄，<br>分析，<br>掌握消費
-      </h1>
-
       <div class="mode-tabs">
         <button
           v-for="tab in tabs"
@@ -78,7 +75,14 @@ const goCamera = () => {
   display: flex;
   flex-direction: column;
   flex: 1;
-  background: linear-gradient(160deg, #FDF0E6 0%, #FBDFC8 55%, #F5C8A8 100%);
+  background-color: #fffaf0;
+  background-image:
+    radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
+    radial-gradient(at 90% 10%, rgba(255,230,180,0.7) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(255,190,140,0.6) 0px, transparent 60%),
+    radial-gradient(at 20% 80%, rgba(255,210,190,0.5) 0px, transparent 50%),
+    radial-gradient(at 80% 90%, rgba(255,160,140,0.4) 0px, transparent 50%),
+    linear-gradient(135deg, #fffcf5 0%, #ffe4cc 40%, #ffd1b3 70%, #ffc0a0 100%);
 }
 
 .home-header {
@@ -88,21 +92,22 @@ const goCamera = () => {
   letter-spacing: 0.05em;
 }
 
+.home-headline {
+  font-family: 'Chivo Mono', monospace;
+  font-size: 42px;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--text);
+  padding: 0 24px;
+  margin-top: 48px;
+}
+
 .home-hero {
   flex: 1;
   padding: 20px 24px 32px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-}
-
-.home-headline {
-  font-family: 'Noto Serif TC', serif;
-  font-size: 42px;
-  font-weight: 300;
-  line-height: 1.35;
-  color: var(--text);
-  margin-bottom: 32px;
 }
 
 .mode-tabs {

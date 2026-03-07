@@ -6,7 +6,7 @@
     </div>
 
     <div class="record-body">
-      <ListeningIndicator :visible="isListening" />
+      <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
       <RecordTable
         :records="pendingRecords"
         @edit="openEdit"
@@ -68,11 +68,14 @@ const { pendingRecords, addRecord, removeRecord, updateRecord, parseTextEntry } 
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
 const isListening = ref(false)
+const interimTranscript = ref('')
 const editVisible = ref(false)
 const editingIndex = ref(-1)
 const editingRecord = ref<BudgetRecord | null>(null)
 
-let voiceTimer: ReturnType<typeof setTimeout> | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let recognition: any = null
+let silenceTimer: ReturnType<typeof setTimeout> | null = null
 
 const formattedDate = computed(() => {
   const d = new Date()
@@ -83,31 +86,68 @@ onMounted(() => {
   if (mode.value === 'voice') startVoice()
 })
 
-onUnmounted(() => clearVoiceTimer())
+onUnmounted(() => stopVoice())
+
+const resetSilenceTimer = () => {
+  if (silenceTimer) clearTimeout(silenceTimer)
+  silenceTimer = setTimeout(() => stopVoice(), 5000)
+}
 
 const startVoice = () => {
-  isListening.value = true
-  clearVoiceTimer()
-  voiceTimer = setTimeout(() => {
-    stopVoice()
-    if (pendingRecords.value.length === 0) {
-      addRecord({ name: '午餐', amount: 150, category: '餐飲' })
+  if (import.meta.server) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (!SR) {
+    console.warn('此瀏覽器不支援 Web Speech API')
+    return
+  }
+
+  recognition = new SR()
+  recognition.lang = 'zh-TW'
+  recognition.continuous = true
+  recognition.interimResults = true
+
+  recognition.onresult = (event: any) => {
+    resetSilenceTimer()
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i]
+      if (result.isFinal) {
+        const text = result[0].transcript.trim()
+        interimTranscript.value = ''
+        if (text) addRecord(parseTextEntry(text))
+      }
+      else {
+        interimTranscript.value = result[0].transcript
+      }
     }
-  }, 3000)
+  }
+
+  recognition.onerror = (event: any) => {
+    if (event.error !== 'no-speech') stopVoice()
+  }
+
+  // continuous mode may stop unexpectedly on some browsers — restart if still active
+  recognition.onend = () => {
+    if (isListening.value) recognition?.start()
+  }
+
+  isListening.value = true
+  interimTranscript.value = ''
+  recognition.start()
+  resetSilenceTimer()
 }
 
 const stopVoice = () => {
   isListening.value = false
-  clearVoiceTimer()
+  interimTranscript.value = ''
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
+  try { recognition?.stop() } catch {}
+  recognition = null
 }
 
 const toggleVoice = () => {
   if (isListening.value) stopVoice()
   else startVoice()
-}
-
-const clearVoiceTimer = () => {
-  if (voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null }
 }
 
 const handleTextEnter = (e: KeyboardEvent) => {
@@ -131,7 +171,7 @@ const saveEdit = (record: BudgetRecord) => {
 
 const confirmRecord = () => {
   if (pendingRecords.value.length === 0) return
-  clearVoiceTimer()
+  stopVoice()
   navigateTo('/complete')
 }
 </script>
@@ -150,7 +190,7 @@ const confirmRecord = () => {
 }
 
 .record-title {
-  font-family: 'Noto Serif TC', serif;
+  font-family: 'Noto Sans TC', sans-serif;
   font-size: 24px;
   font-weight: 300;
   margin-bottom: 4px;
