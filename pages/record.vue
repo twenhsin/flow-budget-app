@@ -67,6 +67,14 @@
       @close="editVisible = false"
       @save="saveEdit"
     />
+
+    <!-- 儲存中 overlay -->
+    <div v-if="isSaving" class="saving-overlay">
+      <div class="saving-spinner" />
+    </div>
+
+    <!-- 錯誤 toast -->
+    <div v-if="saveError" class="save-error-toast">{{ saveError }}</div>
   </div>
 </template>
 
@@ -76,7 +84,8 @@ import type { BudgetRecord, EntryMode } from '~/types'
 definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
-const { pendingRecords, addRecord, removeRecord, updateRecord, parseTextEntry } = useRecords()
+const supabase = useSupabaseClient()
+const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry } = useRecords()
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
 const isListening = ref(false)
@@ -84,6 +93,8 @@ const interimTranscript = ref('')
 const editVisible = ref(false)
 const editingIndex = ref(-1)
 const editingRecord = ref<BudgetRecord | null>(null)
+const isSaving = ref(false)
+const saveError = ref('')
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let recognition: any = null
@@ -181,9 +192,32 @@ const saveEdit = (record: BudgetRecord) => {
   editVisible.value = false
 }
 
-const confirmRecord = () => {
+const confirmRecord = async () => {
   if (pendingRecords.value.length === 0) return
   stopVoice()
+
+  isSaving.value = true
+  saveError.value = ''
+
+  const rows = pendingRecords.value.map(r => ({
+    name: r.name,
+    amount: r.amount,
+    category: r.category,
+    input_method: mode.value,
+  }))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('expenses').insert(rows)
+
+  isSaving.value = false
+
+  if (error) {
+    saveError.value = `儲存失敗：${error.message}`
+    setTimeout(() => { saveError.value = '' }, 5000)
+    return
+  }
+
+  clearRecords()
   navigateTo('/complete')
 }
 </script>
@@ -345,5 +379,42 @@ const confirmRecord = () => {
 
 .action-pill--full {
   width: 100%;
+}
+
+.saving-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.saving-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(224, 122, 79, 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.save-error-toast {
+  position: fixed;
+  bottom: calc(120px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(200, 60, 60, 0.9);
+  color: white;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  white-space: nowrap;
+  z-index: 20;
 }
 </style>
