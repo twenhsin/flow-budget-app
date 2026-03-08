@@ -12,11 +12,15 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
 }
 
 .layout-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 </style>

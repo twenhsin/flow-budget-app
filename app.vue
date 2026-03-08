@@ -9,7 +9,8 @@
 
 <style>
 .app-shell {
-  max-width: 390px;
+  width: 100%;
+  max-width: 430px;
   margin: 0 auto;
   min-height: 100dvh;
   position: relative;

@@ -4,7 +4,9 @@
     <div class="orb orb-2" aria-hidden="true" />
     <div class="orb orb-3" aria-hidden="true" />
     <div class="home-header">讓 AI 幫你整理每一筆消費</div>
-    <h1 class="home-headline">紀錄，<br>分析，<br>掌握消費</h1>
+    <Transition name="fade" mode="out-in">
+      <h1 :key="activeTab" class="home-headline" v-html="currentHeadline" />
+    </Transition>
     <div class="home-hero">
       <div class="mode-tabs">
         <button
@@ -21,7 +23,7 @@
       <div class="input-bar">
         <input
           type="text"
-          placeholder="輸入你的消費"
+          :placeholder="currentPlaceholder"
           readonly
           @click="goTextRecord"
         >
@@ -33,7 +35,7 @@
               <line x1="12" y1="19" x2="12" y2="23" />
             </svg>
           </button>
-          <button class="icon-btn" title="拍照" @click.stop="goCamera">
+          <button v-if="activeTab === 'record'" class="icon-btn" title="拍照" @click.stop="goCamera">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
@@ -55,9 +57,24 @@ const { clearRecords } = useRecords()
 const activeTab = ref<HomeTab>('record')
 const tabs = [
   { value: 'record' as HomeTab, label: '紀錄' },
-  { value: 'total' as HomeTab, label: '總計' },
+  { value: 'stats' as HomeTab, label: '統計' },
   { value: 'analysis' as HomeTab, label: '分析' },
 ]
+
+const headlines: Record<HomeTab, string> = {
+  record: '記下每一筆，<br>建立你的<br>消費全貌',
+  stats: '輸入條件，<br>算出你想知道<br>的每一個數字',
+  analysis: '提出問題，<br>讓數據說出<br>消費習慣',
+}
+
+const placeholders: Record<HomeTab, string> = {
+  record: '輸入你的消費',
+  stats: '輸入查詢條件',
+  analysis: '輸入你的問題',
+}
+
+const currentHeadline = computed(() => headlines[activeTab.value])
+const currentPlaceholder = computed(() => placeholders[activeTab.value])
 
 const goTextRecord = () => {
   clearRecords()
@@ -319,5 +336,15 @@ const goCamera = () => {
 .icon-btn svg {
   width: 18px;
   height: 18px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

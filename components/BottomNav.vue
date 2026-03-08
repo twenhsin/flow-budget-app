@@ -1,6 +1,16 @@
 <template>
   <nav class="bottom-nav">
     <NuxtLink to="/" class="nav-item" :class="{ active: route.path === '/' }">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 12L12 3l9 9" />
+          <path d="M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9" />
+        </svg>
+      </div>
+      <span class="nav-label">首頁</span>
+    </NuxtLink>
+
+    <NuxtLink to="/record" class="nav-item" :class="{ active: route.path === '/record' }">
       <div class="nav-dot" :class="{ visible: hasNotification }" />
       <div class="nav-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -19,17 +29,6 @@
         </svg>
       </div>
       <span class="nav-label">分析</span>
-    </NuxtLink>
-
-    <NuxtLink to="/stats" class="nav-item" :class="{ active: route.path === '/stats' }">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      </div>
-      <span class="nav-label">統計</span>
     </NuxtLink>
 
     <NuxtLink to="/account" class="nav-item" :class="{ active: route.path === '/account' }">
@@ -57,8 +56,13 @@ const hasNotification = useState('hasNotification', () => false)
   background: rgba(253, 240, 230, 0.92);
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(196, 168, 130, 0.25);
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 100;
 }
 
 .nav-item {

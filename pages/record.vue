@@ -15,7 +15,7 @@
     </div>
 
     <div class="action-bar">
-      <div class="action-pill">
+      <div class="action-pill" :class="{ 'action-pill--full': mode === 'text' }">
         <button class="action-side-btn" @click="navigateTo('/')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -294,7 +294,8 @@ const confirmRecord = () => {
 }
 
 .action-center-input {
-  width: 120px;
+  flex: 1;
+  min-width: 0;
   height: 44px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.8);
@@ -340,5 +341,9 @@ const confirmRecord = () => {
 .action-confirm svg {
   width: 16px;
   height: 16px;
+}
+
+.action-pill--full {
+  width: 100%;
 }
 </style>
