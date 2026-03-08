@@ -85,7 +85,8 @@ definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
 const supabase = useSupabaseClient()
-const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry } = useRecords()
+const { pendingRecords, addRecord, removeRecord, updateRecord, parseTextEntry } = useRecords()
+const hasNotification = useState('hasNotification', () => false)
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
 const isListening = ref(false)
@@ -217,7 +218,7 @@ const confirmRecord = async () => {
     return
   }
 
-  clearRecords()
+  hasNotification.value = true
   navigateTo('/complete')
 }
 </script>
