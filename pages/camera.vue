@@ -23,6 +23,15 @@
     <!-- Floating header -->
     <div class="camera-header">拍照</div>
 
+    <!-- Loading overlay -->
+    <div v-if="isAnalyzing" class="analyzing-overlay">
+      <div class="analyzing-spinner" />
+      <div class="analyzing-text">辨識中…</div>
+    </div>
+
+    <!-- Error toast -->
+    <div v-if="errorMsg" class="error-toast">{{ errorMsg }}</div>
+
     <!-- Floating controls -->
     <div class="camera-controls">
       <button class="cam-cancel-btn" @click="cancel">
@@ -31,7 +40,7 @@
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
-      <button class="shutter-btn" :disabled="!streamReady" @click="takePhoto">
+      <button class="shutter-btn" :disabled="!streamReady || isAnalyzing" @click="takePhoto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
           <circle cx="12" cy="13" r="4" />
@@ -50,6 +59,8 @@ const { clearRecords, addRecord } = useRecords()
 const videoRef = ref<HTMLVideoElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const streamReady = ref(false)
+const isAnalyzing = ref(false)
+const errorMsg = ref('')
 let stream: MediaStream | null = null
 
 const startCamera = async () => {
@@ -75,7 +86,7 @@ const stopCamera = () => {
   streamReady.value = false
 }
 
-const takePhoto = () => {
+const takePhoto = async () => {
   const video = videoRef.value
   const canvas = canvasRef.value
   if (!video || !canvas) return
@@ -84,12 +95,32 @@ const takePhoto = () => {
   canvas.height = video.videoHeight
   canvas.getContext('2d')?.drawImage(video, 0, 0)
 
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+  const base64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '')
+
   stopCamera()
-  clearRecords()
-  // TODO: send canvas.toDataURL('image/jpeg') to AI for receipt parsing
-  addRecord({ name: '咖啡', amount: 120, category: '飲料' })
-  addRecord({ name: '蛋糕', amount: 80, category: '點心' })
-  navigateTo('/record?mode=camera')
+  isAnalyzing.value = true
+  errorMsg.value = ''
+
+  try {
+    const result = await $fetch<{ items: { name: string; amount: number; category: string }[] }>(
+      '/api/analyze-receipt',
+      { method: 'POST', body: { image: base64 } },
+    )
+    clearRecords()
+    for (const item of result.items) {
+      addRecord({ name: item.name, amount: item.amount, category: item.category })
+    }
+    navigateTo('/record?mode=camera')
+  }
+  catch {
+    errorMsg.value = '辨識失敗，請重試'
+    setTimeout(() => { errorMsg.value = '' }, 3000)
+    await startCamera()
+  }
+  finally {
+    isAnalyzing.value = false
+  }
 }
 
 const cancel = () => {
@@ -250,5 +281,51 @@ onUnmounted(() => stopCamera())
 .shutter-btn svg {
   width: 24px;
   height: 24px;
+}
+
+.analyzing-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.analyzing-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.analyzing-text {
+  color: white;
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+}
+
+.error-toast {
+  position: absolute;
+  bottom: calc(140px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(200, 60, 60, 0.9);
+  color: white;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  white-space: nowrap;
+  z-index: 10;
 }
 </style>

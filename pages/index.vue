@@ -283,9 +283,9 @@ const goCamera = () => {
 .input-bar {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: var(--radius-pill);
-  padding: 8px 16px 8px 20px;
+  padding: 4px 4px 4px 20px;
   box-shadow: 0 2px 16px rgba(196, 98, 45, 0.1);
   overflow: hidden;
 }
@@ -310,8 +310,11 @@ const goCamera = () => {
 .input-icons {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   flex-shrink: 0;
+  border: 1px solid rgba(224, 122, 79, 0.4);
+  border-radius: 40px;
+  padding: 2px;
 }
 
 .icon-btn {
@@ -336,6 +339,14 @@ const goCamera = () => {
 .icon-btn svg {
   width: 18px;
   height: 18px;
+}
+
+.icon-btn:first-child {
+  padding-left: 4px;
+}
+
+.icon-btn:last-child {
+  padding-right: 4px;
 }
 
 .fade-enter-active,

@@ -1,5 +1,8 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  runtimeConfig: {
+    openaiApiKey: process.env.OPENAI_API_KEY,
+  },
   modules: ['@nuxtjs/tailwindcss', '@nuxtjs/supabase'],
   css: ['~/assets/css/main.css'],
   supabase: {
