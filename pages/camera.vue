@@ -103,7 +103,7 @@ const takePhoto = async () => {
   errorMsg.value = ''
 
   try {
-    const result = await $fetch<{ items: { name: string; amount: number; category: string }[] }>(
+    const result = await $fetch<{ items: { name: string; amount: number; category: string }[]; fallback?: boolean }>(
       '/api/analyze-receipt',
       { method: 'POST', body: { image: base64 } },
     )
@@ -111,11 +111,18 @@ const takePhoto = async () => {
     for (const item of result.items) {
       addRecord({ name: item.name, amount: item.amount, category: item.category })
     }
+    if (result.fallback) {
+      errorMsg.value = '無法自動辨識，請手動輸入'
+      setTimeout(() => { errorMsg.value = '' }, 4000)
+    }
     navigateTo('/record?mode=camera')
   }
-  catch {
-    errorMsg.value = '辨識失敗，請重試'
-    setTimeout(() => { errorMsg.value = '' }, 3000)
+  catch (err: any) {
+    console.error('[camera] 辨識失敗:', err)
+    console.error('[camera] 錯誤 data:', err?.data)
+    const detail = err?.data?.body ? ` (${err.data.body.slice(0, 200)})` : ''
+    errorMsg.value = `辨識失敗：${err?.message ?? '未知錯誤'}${detail}`
+    setTimeout(() => { errorMsg.value = '' }, 6000)
     await startCamera()
   }
   finally {
