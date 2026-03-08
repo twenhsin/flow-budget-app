@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
         content: [
           {
             type: 'text',
-            text: '這是一張台灣的收據或消費照片，請辨識出所有消費項目，回傳 JSON 格式：{"items": [{"name": "項目名稱", "amount": 金額數字, "category": "類別"}]}，類別只能從以下選擇：餐飲、飲料、點心、居住、休閒、交通、通訊、其他。只回傳 JSON，不要其他文字。',
+            text: '這是一張台灣的收據，請辨識出實際購買的商品項目（排除合計、小計、現金、找零、稅金等非商品行），每個項目回傳名稱和金額。回傳純 JSON 格式，不要加任何說明文字或 markdown：{"items": [{"name": "項目名稱", "amount": 金額數字, "category": "類別"}]}，類別只能從以下選擇：餐飲、飲料、點心、居住、休閒、交通、通訊、其他。如果無法辨識，回傳 {"items": []}',
           },
           {
             type: 'image_url',
