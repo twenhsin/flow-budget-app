@@ -318,7 +318,8 @@ onUnmounted(() => stopVoice())
 .records-screen {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   background-color: #fffaf0;
   background-image:
     radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
@@ -514,8 +515,10 @@ onUnmounted(() => stopVoice())
 /* Records Body */
 .records-body {
   flex: 1;
+  min-height: 0;
   padding: 0 16px calc(72px + 60px + env(safe-area-inset-bottom));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .records-empty {

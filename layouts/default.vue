@@ -11,7 +11,7 @@
 .layout-with-nav {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
