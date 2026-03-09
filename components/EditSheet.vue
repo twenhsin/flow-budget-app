@@ -176,7 +176,7 @@ h3 {
   border-radius: var(--radius-md);
   background: white;
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text);
   outline: none;
   transition: border-color 0.2s;
@@ -247,7 +247,7 @@ h3 {
   border: none;
   background: transparent;
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text);
   outline: none;
 }

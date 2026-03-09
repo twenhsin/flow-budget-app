@@ -43,10 +43,18 @@
         </button>
         <div v-else class="action-center-input">
           <input
+            ref="textInput"
             class="action-text-input"
             placeholder="輸入你的消費"
+            enterkeyhint="done"
             @keydown.enter="handleTextEnter"
           >
+          <button class="text-add-btn" @click="handleTextAdd">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
         </div>
 
         <button
@@ -89,6 +97,7 @@ const { pendingRecords, addRecord, removeRecord, updateRecord, parseTextEntry } 
 const hasNotification = useState('hasNotification', () => false)
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
+const textInput = ref<HTMLInputElement | null>(null)
 const isListening = ref(false)
 const interimTranscript = ref('')
 const editVisible = ref(false)
@@ -182,6 +191,16 @@ const handleTextEnter = (e: KeyboardEvent) => {
   input.value = ''
 }
 
+const handleTextAdd = () => {
+  const input = textInput.value
+  if (!input) return
+  const val = input.value.trim()
+  if (!val) return
+  addRecord(parseTextEntry(val))
+  input.value = ''
+  input.focus()
+}
+
 const openEdit = (index: number) => {
   editingIndex.value = index
   editingRecord.value = { ...pendingRecords.value[index] }
@@ -233,7 +252,7 @@ const confirmRecord = async () => {
 }
 
 .record-header {
-  padding: 52px 24px 4px;
+  padding: 40px 24px 4px;
 }
 
 .record-title {
@@ -337,20 +356,47 @@ const confirmRecord = async () => {
   display: flex;
   align-items: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
 .action-text-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 100%;
   border: none;
   background: transparent;
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 300;
   color: var(--text);
   text-align: center;
   outline: none;
   padding: 0 16px;
+}
+
+.text-add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #EC844C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 4px;
+  transition: all 0.18s;
+}
+
+.text-add-btn:active {
+  transform: scale(0.88);
+}
+
+.text-add-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .action-text-input::placeholder {

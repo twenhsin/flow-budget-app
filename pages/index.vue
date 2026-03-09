@@ -296,7 +296,7 @@ const goCamera = () => {
   border: none;
   background: transparent;
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 300;
   color: var(--text);
   outline: none;

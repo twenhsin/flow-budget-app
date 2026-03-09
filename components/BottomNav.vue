@@ -105,7 +105,7 @@ const hasNotification = useState('hasNotification', () => false)
 }
 
 .nav-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-soft);
   letter-spacing: 0.04em;
 }
