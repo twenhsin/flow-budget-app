@@ -10,7 +10,7 @@
       <span class="nav-label">首頁</span>
     </NuxtLink>
 
-    <NuxtLink to="/record" class="nav-item" :class="{ active: route.path === '/record' }">
+    <NuxtLink to="/records" class="nav-item" :class="{ active: route.path === '/records' }">
       <div class="nav-dot" :class="{ visible: hasNotification }" />
       <div class="nav-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -96,12 +96,12 @@ const hasNotification = useState('hasNotification', () => false)
 }
 
 .nav-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .nav-item.active .nav-icon {
-  color: var(--accent);
+  color: #EC844C;
 }
 
 .nav-label {
@@ -111,6 +111,7 @@ const hasNotification = useState('hasNotification', () => false)
 }
 
 .nav-item.active .nav-label {
-  color: var(--accent);
+  color: #EC844C;
+  font-weight: 500;
 }
 </style>

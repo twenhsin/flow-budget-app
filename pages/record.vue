@@ -2,7 +2,6 @@
   <div class="record-screen">
     <div class="record-header">
       <div class="record-title">當前紀錄</div>
-      <div class="record-date">{{ formattedDate }}</div>
     </div>
 
     <div class="record-body">
@@ -10,7 +9,6 @@
       <RecordTable
         :records="pendingRecords"
         @edit="openEdit"
-        @delete="removeRecord"
       />
     </div>
 
@@ -74,6 +72,7 @@
       :record="editingRecord"
       @close="editVisible = false"
       @save="saveEdit"
+      @delete="deleteFromEdit"
     />
 
     <!-- 儲存中 overlay -->
@@ -212,6 +211,11 @@ const saveEdit = (record: BudgetRecord) => {
   editVisible.value = false
 }
 
+const deleteFromEdit = () => {
+  removeRecord(editingIndex.value)
+  editVisible.value = false
+}
+
 const confirmRecord = async () => {
   if (pendingRecords.value.length === 0) return
   stopVoice()
@@ -262,10 +266,6 @@ const confirmRecord = async () => {
   margin-bottom: 4px;
 }
 
-.record-date {
-  font-size: 12px;
-  color: var(--text-soft);
-}
 
 .record-body {
   flex: 1;
@@ -307,8 +307,8 @@ const confirmRecord = async () => {
 }
 
 .action-side-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .action-side-btn:active {
@@ -321,7 +321,7 @@ const confirmRecord = async () => {
   border-radius: 22px;
   border: none;
   background: rgba(255, 255, 255, 0.8);
-  color: var(--text-soft);
+  color: #EC844C;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -338,7 +338,7 @@ const confirmRecord = async () => {
 
 .action-center-btn.active {
   background: rgba(224, 122, 79, 0.15);
-  color: var(--accent);
+  color: var(--text);
   animation: mic-pulse 1.5s ease infinite;
 }
 
@@ -395,8 +395,8 @@ const confirmRecord = async () => {
 }
 
 .text-add-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .action-text-input::placeholder {
@@ -420,8 +420,8 @@ const confirmRecord = async () => {
 }
 
 .action-confirm svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .action-pill--full {

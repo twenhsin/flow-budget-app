@@ -1,0 +1,723 @@
+<template>
+  <div class="records-screen">
+    <div class="orb orb-1" aria-hidden="true" />
+    <div class="orb orb-2" aria-hidden="true" />
+    <div class="orb orb-3" aria-hidden="true" />
+
+    <!-- Month Navigation -->
+    <div class="month-nav">
+      <button class="month-arrow" @click="prevMonth">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <span class="month-label">{{ monthLabel }}</span>
+      <button class="month-arrow" @click="nextMonth">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Month Summary -->
+    <div class="month-summary">
+      <span class="summary-label">支出</span>
+      <span class="summary-total">-{{ monthTotal }}</span>
+    </div>
+
+    <!-- Records Body -->
+    <div class="records-body">
+      <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
+
+      <div v-if="isLoading" class="records-empty">載入中...</div>
+      <div v-else-if="dateGroups.length === 0" class="records-empty">本月尚無紀錄</div>
+
+      <template v-else>
+        <div v-for="group in dateGroups" :key="group.date" class="date-group">
+          <div class="group-header">
+            <span class="group-date">{{ group.dateLabel }}</span>
+            <span class="group-subtotal">-{{ group.subtotal }}</span>
+          </div>
+          <div v-for="(record, i) in group.records" :key="record.id ?? i" class="record-row">
+            <div class="cat-icon" :style="{ background: catColor(record.category) }">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="catPaths(record.category)" />
+            </div>
+            <span class="row-name">{{ record.name }}</span>
+            <span class="row-amount">-{{ record.amount }}</span>
+            <button class="row-edit-btn" @click="openEdit(record)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Bottom Input Bar (above BottomNav) -->
+    <div class="input-bar-wrap">
+      <div class="input-bar">
+        <input
+          ref="textInput"
+          type="text"
+          class="bar-input"
+          placeholder="輸入你的消費"
+          enterkeyhint="done"
+          @keydown.enter="handleTextEnter"
+        >
+        <div class="bar-icons">
+          <button class="bar-icon-btn" :class="{ active: isListening }" @click="toggleVoice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+            </svg>
+          </button>
+          <button class="bar-icon-btn" @click="navigateTo('/camera')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EditSheet -->
+    <EditSheet
+      :visible="editVisible"
+      :record="editingRecord"
+      :bottom-offset="72"
+      @close="editVisible = false"
+      @save="saveEdit"
+      @delete="deleteRecord"
+    />
+
+    <!-- Saving Overlay -->
+    <div v-if="isSaving" class="saving-overlay">
+      <div class="saving-spinner" />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { BudgetRecord } from '~/types'
+
+definePageMeta({ layout: 'default' })
+
+const supabase = useSupabaseClient()
+const { parseTextEntry } = useRecords()
+
+// Month state
+const today = new Date()
+const year = ref(today.getFullYear())
+const month = ref(today.getMonth() + 1)
+
+const monthLabel = computed(() => `${year.value}年${month.value}月`)
+
+const prevMonth = () => {
+  if (month.value === 1) { year.value--; month.value = 12 }
+  else month.value--
+}
+
+const nextMonth = () => {
+  if (month.value === 12) { year.value++; month.value = 1 }
+  else month.value++
+}
+
+// Records
+const allRecords = ref<BudgetRecord[]>([])
+const isLoading = ref(false)
+const isSaving = ref(false)
+
+const monthTotal = computed(() => allRecords.value.reduce((s, r) => s + r.amount, 0))
+
+interface DateGroup {
+  date: string
+  dateLabel: string
+  subtotal: number
+  records: BudgetRecord[]
+}
+
+const dateGroups = computed<DateGroup[]>(() => {
+  const groups: Record<string, BudgetRecord[]> = {}
+  for (const r of allRecords.value) {
+    const d = r.created_at ? r.created_at.slice(0, 10) : 'unknown'
+    if (!groups[d]) groups[d] = []
+    groups[d].push(r)
+  }
+  return Object.entries(groups)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, records]) => {
+      const d = new Date(date + 'T00:00:00')
+      const dateLabel = `${d.getMonth() + 1}月${d.getDate()}日`
+      const subtotal = records.reduce((s, r) => s + r.amount, 0)
+      return { date, dateLabel, subtotal, records }
+    })
+})
+
+const fetchRecords = async () => {
+  isLoading.value = true
+  const from = `${year.value}-${String(month.value).padStart(2, '0')}-01`
+  const toMonth = month.value === 12 ? 1 : month.value + 1
+  const toYear = month.value === 12 ? year.value + 1 : year.value
+  const to = `${toYear}-${String(toMonth).padStart(2, '0')}-01`
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('expenses')
+    .select('*')
+    .gte('created_at', from)
+    .lt('created_at', to)
+    .order('created_at', { ascending: false })
+  allRecords.value = data ?? []
+  isLoading.value = false
+}
+
+watch([year, month], fetchRecords, { immediate: true })
+
+// Category icons
+const CAT_COLORS: Record<string, string> = {
+  餐飲: '#E07A4F', 飲料: '#6AADCB', 點心: '#E07A8F',
+  居住: '#8E7BBE', 休閒: '#6AB87A', 交通: '#C4A44F', 通訊: '#7AA5E0',
+}
+const catColor = (cat: string) => CAT_COLORS[cat] ?? '#B0A090'
+
+const CAT_PATHS: Record<string, string> = {
+  餐飲: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><line x1="7" y1="2" x2="7" y2="22"/>',
+  飲料: '<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>',
+  點心: '<path d="M12 2a9 9 0 0 1 9 9c0 3.18-2.09 6.36-4 8H7c-1.91-1.64-4-4.82-4-8a9 9 0 0 1 9-9z"/><line x1="9" y1="22" x2="15" y2="22"/>',
+  居住: '<path d="M3 12L12 3l9 9"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9"/>',
+  休閒: '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
+  交通: '<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  通訊: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+}
+const catPaths = (cat: string) => CAT_PATHS[cat] ?? '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>'
+
+// Edit
+const editVisible = ref(false)
+const editingRecord = ref<BudgetRecord | null>(null)
+
+const openEdit = (record: BudgetRecord) => {
+  editingRecord.value = { ...record }
+  editVisible.value = true
+}
+
+const saveEdit = async (record: BudgetRecord) => {
+  if (!record.id) return
+  editVisible.value = false
+  isSaving.value = true
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('expenses').update({
+    name: record.name,
+    amount: record.amount,
+    category: record.category,
+  }).eq('id', record.id)
+  isSaving.value = false
+  await fetchRecords()
+}
+
+const deleteRecord = async () => {
+  if (!editingRecord.value?.id) return
+  editVisible.value = false
+  isSaving.value = true
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('expenses').delete().eq('id', editingRecord.value.id)
+  isSaving.value = false
+  await fetchRecords()
+}
+
+// Text input
+const textInput = ref<HTMLInputElement | null>(null)
+
+const saveNewRecord = async (record: BudgetRecord) => {
+  isSaving.value = true
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('expenses').insert([{
+    name: record.name,
+    amount: record.amount,
+    category: record.category,
+    input_method: 'text',
+  }])
+  isSaving.value = false
+  await fetchRecords()
+}
+
+const handleTextEnter = async (e: KeyboardEvent) => {
+  const input = e.target as HTMLInputElement
+  const val = input.value.trim()
+  if (!val) return
+  input.value = ''
+  await saveNewRecord(parseTextEntry(val))
+}
+
+// Voice
+const isListening = ref(false)
+const interimTranscript = ref('')
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let recognition: any = null
+let silenceTimer: ReturnType<typeof setTimeout> | null = null
+
+const resetSilenceTimer = () => {
+  if (silenceTimer) clearTimeout(silenceTimer)
+  silenceTimer = setTimeout(() => stopVoice(), 5000)
+}
+
+const startVoice = () => {
+  if (import.meta.server) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (!SR) return
+  recognition = new SR()
+  recognition.lang = 'zh-TW'
+  recognition.continuous = true
+  recognition.interimResults = true
+  recognition.onresult = (event: any) => {
+    resetSilenceTimer()
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i]
+      if (result.isFinal) {
+        const text = result[0].transcript.trim()
+        interimTranscript.value = ''
+        if (text) saveNewRecord(parseTextEntry(text))
+      }
+      else {
+        interimTranscript.value = result[0].transcript
+      }
+    }
+  }
+  recognition.onerror = (event: any) => {
+    if (event.error !== 'no-speech') stopVoice()
+  }
+  recognition.onend = () => {
+    if (isListening.value) recognition?.start()
+  }
+  isListening.value = true
+  interimTranscript.value = ''
+  recognition.start()
+  resetSilenceTimer()
+}
+
+const stopVoice = () => {
+  isListening.value = false
+  interimTranscript.value = ''
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
+  try { recognition?.stop() } catch {}
+  recognition = null
+}
+
+const toggleVoice = () => {
+  if (isListening.value) stopVoice()
+  else startVoice()
+}
+
+onUnmounted(() => stopVoice())
+</script>
+
+<style scoped>
+.records-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background-color: #fffaf0;
+  background-image:
+    radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
+    radial-gradient(at 90% 10%, rgba(255,230,180,0.7) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(255,190,140,0.6) 0px, transparent 60%),
+    radial-gradient(at 20% 80%, rgba(255,210,190,0.5) 0px, transparent 50%),
+    radial-gradient(at 80% 90%, rgba(255,160,140,0.4) 0px, transparent 50%),
+    linear-gradient(135deg, #fffcf5 0%, #ffe4cc 40%, #ffd1b3 70%, #ffc0a0 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+@property --rc1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(255, 230, 160, 0.6);
+}
+
+@property --rc2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(255, 140, 90, 0.48);
+}
+
+@property --rc3 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(255, 190, 130, 0.48);
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 0;
+}
+
+.orb-1 {
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, var(--rc1) 0%, transparent 70%);
+  top: -120px;
+  left: -80px;
+  animation:
+    rOrbFloat1 16s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite,
+    rOrbColor1 11s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--rc2) 0%, transparent 70%);
+  top: 30%;
+  right: -60px;
+  animation:
+    rOrbFloat2 20s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite,
+    rOrbColor2 15s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, var(--rc3) 0%, transparent 70%);
+  bottom: -80px;
+  left: -40px;
+  animation:
+    rOrbFloat3 18s cubic-bezier(0.55, 0.085, 0.68, 0.53) infinite,
+    rOrbColor3 13s ease-in-out infinite;
+}
+
+@keyframes rOrbFloat1 {
+  0%   { transform: translate(0, 0)         scale(1); }
+  18%  { transform: translate(80px, 160px)  scale(1.3); }
+  35%  { transform: translate(30px, 340px)  scale(0.8); }
+  52%  { transform: translate(140px, 500px) scale(1.4); }
+  70%  { transform: translate(60px, 620px)  scale(0.75); }
+  85%  { transform: translate(-20px, 420px) scale(1.15); }
+  100% { transform: translate(0, 0)         scale(1); }
+}
+
+@keyframes rOrbFloat2 {
+  0%   { transform: translate(0, 0)           scale(1); }
+  15%  { transform: translate(-60px, -180px)  scale(0.7); }
+  32%  { transform: translate(-130px, 80px)   scale(1.35); }
+  50%  { transform: translate(-50px, 320px)   scale(0.85); }
+  67%  { transform: translate(-160px, 180px)  scale(1.4); }
+  82%  { transform: translate(-80px, -100px)  scale(0.9); }
+  100% { transform: translate(0, 0)           scale(1); }
+}
+
+@keyframes rOrbFloat3 {
+  0%   { transform: translate(0, 0)           scale(1); }
+  20%  { transform: translate(100px, -200px)  scale(1.25); }
+  38%  { transform: translate(60px, -420px)   scale(0.72); }
+  55%  { transform: translate(180px, -560px)  scale(1.38); }
+  72%  { transform: translate(90px, -320px)   scale(0.8); }
+  88%  { transform: translate(40px, -140px)   scale(1.2); }
+  100% { transform: translate(0, 0)           scale(1); }
+}
+
+@keyframes rOrbColor1 {
+  0%   { --rc1: rgba(255, 230, 160, 0.6); }
+  28%  { --rc1: rgba(255, 150, 100, 0.5); }
+  55%  { --rc1: rgba(255, 190, 150, 0.55); }
+  78%  { --rc1: rgba(255, 110, 80, 0.4); }
+  100% { --rc1: rgba(255, 230, 160, 0.6); }
+}
+
+@keyframes rOrbColor2 {
+  0%   { --rc2: rgba(255, 140, 90, 0.48); }
+  25%  { --rc2: rgba(255, 220, 140, 0.52); }
+  52%  { --rc2: rgba(255, 100, 75, 0.42); }
+  75%  { --rc2: rgba(255, 185, 120, 0.5); }
+  100% { --rc2: rgba(255, 140, 90, 0.48); }
+}
+
+@keyframes rOrbColor3 {
+  0%   { --rc3: rgba(255, 190, 130, 0.48); }
+  30%  { --rc3: rgba(255, 120, 85, 0.44); }
+  58%  { --rc3: rgba(255, 240, 170, 0.56); }
+  82%  { --rc3: rgba(255, 160, 110, 0.5); }
+  100% { --rc3: rgba(255, 190, 130, 0.48); }
+}
+
+.month-nav,
+.month-summary,
+.records-body,
+.input-bar-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* Month Navigation */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 8px 0;
+}
+
+.month-arrow {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.month-arrow:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.month-arrow svg {
+  width: 20px;
+  height: 20px;
+}
+
+.month-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+/* Month Summary */
+.month-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 24px 16px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: #B18272;
+}
+
+.summary-total {
+  font-size: 28px;
+  font-weight: 700;
+  color: #8B5E3C;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Records Body */
+.records-body {
+  flex: 1;
+  padding: 0 16px calc(72px + 60px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.records-empty {
+  padding: 48px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+/* Date Group */
+.date-group {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  animation: rowIn 0.25s ease both;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.group-date {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.group-subtotal {
+  font-size: 13px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Record Row */
+.record-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto 44px;
+  padding: 10px 8px 10px 16px;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.record-row:last-child {
+  border-bottom: none;
+}
+
+.cat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.row-name {
+  font-size: 14px;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.row-edit-btn {
+  background: none;
+  border: none;
+  color: #EC844C;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  transition: color 0.15s;
+}
+
+.row-edit-btn:active {
+  color: var(--text);
+}
+
+.row-edit-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Input Bar */
+.input-bar-wrap {
+  position: fixed;
+  bottom: calc(72px + 24px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  padding: 0 16px;
+  z-index: 90;
+}
+
+.input-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-pill);
+  padding: 4px 4px 4px 20px;
+  box-shadow: 0 2px 12px rgba(196, 98, 45, 0.1);
+}
+
+.bar-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--text);
+  outline: none;
+}
+
+.bar-input::placeholder {
+  color: var(--text-soft);
+}
+
+.bar-icons {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(224, 122, 79, 0.4);
+  border-radius: 40px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.bar-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #EC844C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+
+.bar-icon-btn:active {
+  transform: scale(0.88);
+}
+
+.bar-icon-btn.active {
+  color: var(--text);
+  animation: mic-pulse 1.5s ease infinite;
+}
+
+.bar-icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Saving */
+.saving-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.saving-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(224, 122, 79, 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

@@ -278,6 +278,7 @@ const goCamera = () => {
 .mode-tab.active {
   background: var(--accent);
   color: white;
+  font-weight: 500;
 }
 
 .input-bar {
@@ -337,8 +338,8 @@ const goCamera = () => {
 }
 
 .icon-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .icon-btn:first-child {

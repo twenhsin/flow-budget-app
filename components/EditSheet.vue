@@ -5,15 +5,15 @@
       class="edit-overlay"
       @click.self="$emit('close')"
     >
-      <div class="edit-sheet">
-        <h3>編輯項目</h3>
-        <div class="edit-field">
-          <label>項目名稱</label>
-          <input v-model="form.name" type="text" placeholder="例：咖啡">
-        </div>
-        <div class="edit-field">
-          <label>金額</label>
-          <input v-model.number="form.amount" type="number" placeholder="0">
+      <div class="edit-sheet" :style="bottomOffset ? { marginBottom: bottomOffset + 'px' } : {}">
+        <div class="edit-sheet-header">
+          <h3>編輯項目</h3>
+          <button class="delete-btn" @click="$emit('delete')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
         </div>
         <div class="edit-field category-wrap">
           <label>類別</label>
@@ -55,6 +55,14 @@
             </div>
           </Transition>
         </div>
+        <div class="edit-field">
+          <label>項目名稱</label>
+          <input v-model="form.name" type="text" placeholder="例：咖啡">
+        </div>
+        <div class="edit-field">
+          <label>金額</label>
+          <input v-model.number="form.amount" type="number" placeholder="0">
+        </div>
 
         <div class="edit-actions">
           <button class="edit-cancel-btn" @click="$emit('close')">取消</button>
@@ -75,11 +83,13 @@ import type { BudgetRecord } from '~/types'
 const props = defineProps<{
   visible: boolean
   record: BudgetRecord | null
+  bottomOffset?: number
 }>()
 
 const emit = defineEmits<{
   close: []
   save: [record: BudgetRecord]
+  delete: []
 }>()
 
 const form = reactive<BudgetRecord>({
@@ -132,12 +142,13 @@ const save = () => emit('save', { ...form })
 
 <style scoped>
 .edit-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(139, 94, 60, 0.3);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   z-index: 100;
 }
 
@@ -146,14 +157,44 @@ const save = () => emit('save', { ...form })
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: 24px 24px calc(32px + env(safe-area-inset-bottom));
   width: 100%;
+  max-width: 430px;
   animation: slideUp 0.25s ease;
+}
+
+.edit-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 h3 {
   font-size: 14px;
   font-weight: 400;
-  margin-bottom: 16px;
   color: var(--text);
+}
+
+.delete-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #EC844C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.delete-btn:active {
+  color: #E05252;
+}
+
+.delete-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .edit-field {
@@ -188,7 +229,7 @@ h3 {
 }
 
 .category-wrap {
-  position: relative;
+  /* position: relative removed — panel positions relative to overlay */
 }
 
 .category-trigger {
@@ -215,17 +256,17 @@ h3 {
 }
 
 .category-trigger svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   color: var(--text-soft);
   flex-shrink: 0;
 }
 
 .category-panel {
   position: absolute;
-  bottom: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  top: 40px;
+  left: 24px;
+  right: 24px;
   background: white;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
@@ -276,8 +317,8 @@ h3 {
 }
 
 .category-add-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
 }
 
 .category-list {
@@ -302,7 +343,7 @@ h3 {
 }
 
 .category-list li.selected {
-  color: var(--accent);
+  color: var(--text);
   font-weight: 400;
 }
 

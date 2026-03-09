@@ -44,7 +44,7 @@ defineProps<{ visible: boolean; transcript?: string }>()
 
 .listen-text {
   font-size: 13px;
-  color: var(--accent);
+  color: var(--text);
   font-weight: 300;
 }
 

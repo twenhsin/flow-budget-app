@@ -257,8 +257,8 @@ onUnmounted(() => stopCamera())
 }
 
 .cam-cancel-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .shutter-btn {
@@ -286,8 +286,8 @@ onUnmounted(() => stopCamera())
 }
 
 .shutter-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .analyzing-overlay {
