@@ -20,7 +20,7 @@ export default {
         },
         brown: {
           DEFAULT: '#8B5E3C',
-          soft: '#C4A882',
+          soft: '#B18272',
         },
         surface: '#FFF8F2',
         disabled: '#D4C4B4',
