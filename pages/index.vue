@@ -27,18 +27,19 @@
           ref="textInput"
           v-model="inputValue"
           type="text"
-          :placeholder="currentPlaceholder"
+          :placeholder="isQuerying ? 'AI 分析中...' : currentPlaceholder"
+          :disabled="isQuerying"
           enterkeyhint="done"
           @keydown.enter="handleSubmit"
         >
-        <button class="add-btn" :disabled="!inputValue.trim()" @click="handleSubmit">
+        <button class="add-btn" :disabled="!inputValue.trim() || isQuerying" @click="handleSubmit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
         <div class="input-icons">
-          <button class="icon-btn" :class="{ active: isListening }" title="語音" @click.stop="toggleVoice">
+          <button class="icon-btn" :class="{ active: isListening }" :disabled="isQuerying" title="語音" @click.stop="toggleVoice">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
               <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -54,6 +55,7 @@
         </div>
       </div>
     </div>
+    <div v-if="queryError" class="query-error-toast">{{ queryError }}</div>
   </div>
 </template>
 
@@ -87,16 +89,53 @@ const currentPlaceholder = computed(() => placeholders[activeTab.value])
 // Input
 const textInput = ref<HTMLInputElement | null>(null)
 const inputValue = ref('')
+const isQuerying = ref(false)
+const queryError = ref('')
 
-const handleSubmit = () => {
+interface QueryResult {
+  title: string
+  queryType: 'total' | 'list' | 'ranking' | 'monthly' | 'grouped'
+  total: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  items: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  groups: any[]
+  dateFrom: string
+  dateTo: string
+}
+const queryResult = useState<QueryResult | null>('queryResult', () => null)
+
+const handleSubmit = async () => {
   const val = inputValue.value.trim()
-  if (!val) return
+  if (!val || isQuerying.value) return
   stopVoice()
-  inputValue.value = ''
+
   if (activeTab.value === 'record') {
+    inputValue.value = ''
     clearRecords()
     addRecord(parseTextEntry(val))
     navigateTo('/record?mode=confirm')
+    return
+  }
+
+  // query tab
+  inputValue.value = ''
+  isQuerying.value = true
+  queryError.value = ''
+  try {
+    const data = await $fetch<QueryResult>('/api/query-expenses', {
+      method: 'POST',
+      body: { question: val },
+    })
+    queryResult.value = data
+    navigateTo('/query-result')
+  }
+  catch {
+    queryError.value = '查詢失敗，請重試'
+    setTimeout(() => { queryError.value = '' }, 4000)
+  }
+  finally {
+    isQuerying.value = false
   }
 }
 
@@ -415,5 +454,19 @@ const goCamera = () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.query-error-toast {
+  position: fixed;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(200, 60, 60, 0.9);
+  color: white;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  white-space: nowrap;
+  z-index: 20;
 }
 </style>

@@ -94,6 +94,7 @@ definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
 const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry } = useRecords()
 const hasNotification = useState('hasNotification', () => false)
 
@@ -175,6 +176,7 @@ const confirmRecord = async () => {
     amount: r.amount,
     category: r.category,
     input_method: isConfirmMode.value ? 'text' : mode.value,
+    user_id: user.value?.id ?? null,
   }))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
