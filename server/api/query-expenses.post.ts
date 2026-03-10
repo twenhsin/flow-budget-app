@@ -1,4 +1,5 @@
 import { serverSupabaseClient } from '#supabase/server'
+import { CATEGORY_NAMES } from '../../constants/categories'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -36,7 +37,7 @@ export default defineEventHandler(async (event) => {
 }
 
 category 規則：
-- category 只能是以下固定類別之一：餐飲、飲料、點心、居住、休閒、交通、通訊、其他
+- category 只能是以下固定類別之一：${CATEGORY_NAMES.join('、')}
 - 如果使用者問的是品項名稱（例如咖啡、便當、計程車、珍奶），category 設為 null，改用 nameKeywords 陣列回傳所有關鍵字
 - 如果使用者明確說某個類別（例如餐飲、交通），才填入 category，nameKeywords 設為 []
 

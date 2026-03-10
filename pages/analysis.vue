@@ -387,24 +387,8 @@ function formatYLabel(n: number) {
   return `${n}`
 }
 
-// ── Category colours & icons (same as records.vue) ────────────────────────────
-const CAT_COLORS: Record<string, string> = {
-  餐飲: '#E07A4F', 飲料: '#6AADCB', 點心: '#E07A8F',
-  居住: '#8E7BBE', 休閒: '#6AB87A', 交通: '#C4A44F', 通訊: '#7AA5E0',
-}
-const catColor = (cat: string) => CAT_COLORS[cat] ?? '#B0A090'
-
-const CAT_PATHS: Record<string, string> = {
-  餐飲: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><line x1="7" y1="2" x2="7" y2="22"/>',
-  飲料: '<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>',
-  點心: '<path d="M12 2a9 9 0 0 1 9 9c0 3.18-2.09 6.36-4 8H7c-1.91-1.64-4-4.82-4-8a9 9 0 0 1 9-9z"/><line x1="9" y1="22" x2="15" y2="22"/>',
-  居住: '<path d="M3 12L12 3l9 9"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9"/>',
-  休閒: '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
-  交通: '<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
-  通訊: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
-}
-const catPaths = (cat: string) => CAT_PATHS[cat]
-  ?? '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>'
+// ── Category colours & icons ────────────────────────────────────────────────────
+import { catColor, catPath as catPaths } from '~/constants/categories'
 </script>
 
 <style scoped>
