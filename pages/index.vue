@@ -20,15 +20,25 @@
         </button>
       </div>
 
+      <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
+
       <div class="input-bar">
         <input
+          ref="textInput"
+          v-model="inputValue"
           type="text"
           :placeholder="currentPlaceholder"
-          readonly
-          @click="goTextRecord"
+          enterkeyhint="done"
+          @keydown.enter="handleSubmit"
         >
+        <button class="add-btn" :disabled="!inputValue.trim()" @click="handleSubmit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
         <div class="input-icons">
-          <button class="icon-btn" title="語音" @click.stop="goVoiceRecord">
+          <button class="icon-btn" :class="{ active: isListening }" title="語音" @click.stop="toggleVoice">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
               <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -52,44 +62,57 @@ import type { HomeTab } from '~/types'
 
 definePageMeta({ layout: 'default' })
 
-const { clearRecords } = useRecords()
+const { clearRecords, addRecord, parseTextEntry } = useRecords()
 
+// Tabs
 const activeTab = ref<HomeTab>('record')
 const tabs = [
   { value: 'record' as HomeTab, label: '紀錄' },
-  { value: 'stats' as HomeTab, label: '統計' },
-  { value: 'analysis' as HomeTab, label: '分析' },
+  { value: 'query' as HomeTab, label: '查詢' },
 ]
 
 const headlines: Record<HomeTab, string> = {
   record: '記下每一筆，<br>建立你的<br>消費全貌',
-  stats: '輸入條件，<br>算出你想知道<br>的每一個數字',
-  analysis: '提出問題，<br>讓數據說出<br>消費習慣',
+  query: '輸入條件，<br>算出你想知道<br>的每一個數字',
 }
 
 const placeholders: Record<HomeTab, string> = {
   record: '輸入你的消費',
-  stats: '輸入查詢條件',
-  analysis: '輸入你的問題',
+  query: '輸入查詢條件',
 }
 
 const currentHeadline = computed(() => headlines[activeTab.value])
 const currentPlaceholder = computed(() => placeholders[activeTab.value])
 
-const goTextRecord = () => {
-  clearRecords()
-  navigateTo('/record?mode=text')
+// Input
+const textInput = ref<HTMLInputElement | null>(null)
+const inputValue = ref('')
+
+const handleSubmit = () => {
+  const val = inputValue.value.trim()
+  if (!val) return
+  stopVoice()
+  inputValue.value = ''
+  if (activeTab.value === 'record') {
+    clearRecords()
+    addRecord(parseTextEntry(val))
+    navigateTo('/record?mode=confirm')
+  }
 }
 
-const goVoiceRecord = () => {
-  clearRecords()
-  navigateTo('/record?mode=voice')
-}
+// Voice
+const { isListening, interimTranscript, stopVoice, toggleVoice } = useVoiceInput({
+  onFinal: (text) => { inputValue.value = text },
+  onInterim: (text) => { inputValue.value = text },
+})
 
+// Camera
 const goCamera = () => {
   clearRecords()
   navigateTo('/camera')
 }
+
+
 </script>
 
 <style scoped>
@@ -301,11 +324,40 @@ const goCamera = () => {
   font-weight: 300;
   color: var(--text);
   outline: none;
-  cursor: pointer;
 }
 
 .input-bar input::placeholder {
   color: var(--text-soft);
+}
+
+/* + submit button */
+.add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #EC844C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s;
+}
+
+.add-btn:active {
+  transform: scale(0.88);
+}
+
+.add-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.add-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .input-icons {
@@ -335,6 +387,11 @@ const goCamera = () => {
 
 .icon-btn:active {
   transform: scale(0.88);
+}
+
+.icon-btn.active {
+  color: var(--text);
+  animation: mic-pulse 1.5s ease infinite;
 }
 
 .icon-btn svg {

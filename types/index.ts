@@ -8,7 +8,7 @@ export interface BudgetRecord {
 }
 
 export type EntryMode = 'voice' | 'text' | 'camera'
-export type HomeTab = 'record' | 'stats' | 'analysis'
+export type HomeTab = 'record' | 'query'
 
 export const CATEGORIES = ['餐飲', '飲料', '點心', '居住', '休閒', '交通', '通訊', '其他']
 export type Category = string

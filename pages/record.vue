@@ -13,47 +13,49 @@
     </div>
 
     <div class="action-bar">
-      <div class="action-pill" :class="{ 'action-pill--full': mode === 'text' }">
-        <button class="action-side-btn" @click="navigateTo('/')">
+      <div class="action-pill" :class="{ 'action-pill--full': mode === 'text' && !isConfirmMode }">
+        <button class="action-side-btn" @click="handleCancel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
 
-        <button
-          v-if="mode === 'voice'"
-          class="action-center-btn"
-          :class="{ active: isListening }"
-          @click="toggleVoice"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" y1="19" x2="12" y2="23" />
-          </svg>
-        </button>
-        <button v-else-if="mode === 'camera'" class="action-center-btn" @click="navigateTo('/camera')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-        </button>
-        <div v-else class="action-center-input">
-          <input
-            ref="textInput"
-            class="action-text-input"
-            placeholder="輸入你的消費"
-            enterkeyhint="done"
-            @keydown.enter="handleTextEnter"
+        <template v-if="!isConfirmMode">
+          <button
+            v-if="mode === 'voice'"
+            class="action-center-btn"
+            :class="{ active: isListening }"
+            @click="toggleVoice"
           >
-          <button class="text-add-btn" @click="handleTextAdd">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
             </svg>
           </button>
-        </div>
+          <button v-else-if="mode === 'camera'" class="action-center-btn" @click="navigateTo('/camera')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+          <div v-else class="action-center-input">
+            <input
+              ref="textInput"
+              class="action-text-input"
+              placeholder="輸入你的消費"
+              enterkeyhint="done"
+              @keydown.enter="handleTextEnter"
+            >
+            <button class="text-add-btn" @click="handleTextAdd">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+        </template>
 
         <button
           class="action-side-btn action-confirm"
@@ -92,22 +94,21 @@ definePageMeta({ layout: 'bare' })
 
 const route = useRoute()
 const supabase = useSupabaseClient()
-const { pendingRecords, addRecord, removeRecord, updateRecord, parseTextEntry } = useRecords()
+const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry } = useRecords()
 const hasNotification = useState('hasNotification', () => false)
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
+const isConfirmMode = computed(() => route.query.mode === 'confirm')
 const textInput = ref<HTMLInputElement | null>(null)
-const isListening = ref(false)
-const interimTranscript = ref('')
 const editVisible = ref(false)
 const editingIndex = ref(-1)
 const editingRecord = ref<BudgetRecord | null>(null)
 const isSaving = ref(false)
 const saveError = ref('')
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let recognition: any = null
-let silenceTimer: ReturnType<typeof setTimeout> | null = null
+const { isListening, interimTranscript, startVoice, stopVoice, toggleVoice } = useVoiceInput({
+  onFinal: (text) => addRecord(parseTextEntry(text)),
+})
 
 const formattedDate = computed(() => {
   const d = new Date()
@@ -117,70 +118,6 @@ const formattedDate = computed(() => {
 onMounted(() => {
   if (mode.value === 'voice') startVoice()
 })
-
-onUnmounted(() => stopVoice())
-
-const resetSilenceTimer = () => {
-  if (silenceTimer) clearTimeout(silenceTimer)
-  silenceTimer = setTimeout(() => stopVoice(), 5000)
-}
-
-const startVoice = () => {
-  if (import.meta.server) return
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-  if (!SR) {
-    console.warn('此瀏覽器不支援 Web Speech API')
-    return
-  }
-
-  recognition = new SR()
-  recognition.lang = 'zh-TW'
-  recognition.continuous = true
-  recognition.interimResults = true
-
-  recognition.onresult = (event: any) => {
-    resetSilenceTimer()
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i]
-      if (result.isFinal) {
-        const text = result[0].transcript.trim()
-        interimTranscript.value = ''
-        if (text) addRecord(parseTextEntry(text))
-      }
-      else {
-        interimTranscript.value = result[0].transcript
-      }
-    }
-  }
-
-  recognition.onerror = (event: any) => {
-    if (event.error !== 'no-speech') stopVoice()
-  }
-
-  // continuous mode may stop unexpectedly on some browsers — restart if still active
-  recognition.onend = () => {
-    if (isListening.value) recognition?.start()
-  }
-
-  isListening.value = true
-  interimTranscript.value = ''
-  recognition.start()
-  resetSilenceTimer()
-}
-
-const stopVoice = () => {
-  isListening.value = false
-  interimTranscript.value = ''
-  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
-  try { recognition?.stop() } catch {}
-  recognition = null
-}
-
-const toggleVoice = () => {
-  if (isListening.value) stopVoice()
-  else startVoice()
-}
 
 const handleTextEnter = (e: KeyboardEvent) => {
   const input = e.target as HTMLInputElement
@@ -216,6 +153,16 @@ const deleteFromEdit = () => {
   editVisible.value = false
 }
 
+const handleCancel = () => {
+  if (isConfirmMode.value) {
+    clearRecords()
+    navigateTo('/')
+  }
+  else {
+    navigateTo('/')
+  }
+}
+
 const confirmRecord = async () => {
   if (pendingRecords.value.length === 0) return
   stopVoice()
@@ -227,7 +174,7 @@ const confirmRecord = async () => {
     name: r.name,
     amount: r.amount,
     category: r.category,
-    input_method: mode.value,
+    input_method: isConfirmMode.value ? 'text' : mode.value,
   }))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -241,8 +188,14 @@ const confirmRecord = async () => {
     return
   }
 
-  hasNotification.value = true
-  navigateTo('/complete')
+  if (isConfirmMode.value) {
+    clearRecords()
+    navigateTo('/')
+  }
+  else {
+    hasNotification.value = true
+    navigateTo('/complete')
+  }
 }
 </script>
 

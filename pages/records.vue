@@ -256,66 +256,9 @@ const handleTextEnter = async (e: KeyboardEvent) => {
 }
 
 // Voice
-const isListening = ref(false)
-const interimTranscript = ref('')
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let recognition: any = null
-let silenceTimer: ReturnType<typeof setTimeout> | null = null
-
-const resetSilenceTimer = () => {
-  if (silenceTimer) clearTimeout(silenceTimer)
-  silenceTimer = setTimeout(() => stopVoice(), 5000)
-}
-
-const startVoice = () => {
-  if (import.meta.server) return
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-  if (!SR) return
-  recognition = new SR()
-  recognition.lang = 'zh-TW'
-  recognition.continuous = true
-  recognition.interimResults = true
-  recognition.onresult = (event: any) => {
-    resetSilenceTimer()
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i]
-      if (result.isFinal) {
-        const text = result[0].transcript.trim()
-        interimTranscript.value = ''
-        if (text) saveNewRecord(parseTextEntry(text))
-      }
-      else {
-        interimTranscript.value = result[0].transcript
-      }
-    }
-  }
-  recognition.onerror = (event: any) => {
-    if (event.error !== 'no-speech') stopVoice()
-  }
-  recognition.onend = () => {
-    if (isListening.value) recognition?.start()
-  }
-  isListening.value = true
-  interimTranscript.value = ''
-  recognition.start()
-  resetSilenceTimer()
-}
-
-const stopVoice = () => {
-  isListening.value = false
-  interimTranscript.value = ''
-  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
-  try { recognition?.stop() } catch {}
-  recognition = null
-}
-
-const toggleVoice = () => {
-  if (isListening.value) stopVoice()
-  else startVoice()
-}
-
-onUnmounted(() => stopVoice())
+const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
+  onFinal: (text) => saveNewRecord(parseTextEntry(text)),
+})
 </script>
 
 <style scoped>
