@@ -4,28 +4,29 @@
     <div class="orb orb-2" aria-hidden="true" />
     <div class="orb orb-3" aria-hidden="true" />
 
-    <!-- Month Navigation -->
-    <div class="month-nav">
-      <button class="month-arrow" @click="prevMonth">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-      <span class="month-label">{{ monthLabel }}</span>
-      <button class="month-arrow" @click="nextMonth">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+    <!-- Month Navigation + Summary (fixed top) -->
+    <div class="records-header">
+      <div class="month-nav">
+        <button class="month-arrow" @click="prevMonth">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <span class="month-label">{{ monthLabel }}</span>
+        <button class="month-arrow" @click="nextMonth">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="month-summary">
+        <span class="summary-label">支出</span>
+        <span class="summary-total">-{{ monthTotal }}</span>
+      </div>
     </div>
 
-    <!-- Month Summary -->
-    <div class="month-summary">
-      <span class="summary-label">支出</span>
-      <span class="summary-total">-{{ monthTotal }}</span>
-    </div>
-
-    <!-- Records Body -->
+    <!-- Records Body (scrollable middle) -->
     <div class="records-body">
       <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
 
@@ -55,7 +56,7 @@
       </template>
     </div>
 
-    <!-- Bottom Input Bar (above BottomNav) -->
+    <!-- Bottom Input Bar (in-flow, above nav) -->
     <div class="input-bar-wrap">
       <div class="input-bar">
         <input
@@ -83,6 +84,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Nav spacer (reserves space for fixed BottomNav) -->
+    <div class="nav-spacer" />
 
     <!-- EditSheet -->
     <EditSheet
@@ -318,8 +322,8 @@ onUnmounted(() => stopVoice())
 .records-screen {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  height: 100dvh;
+  overflow: hidden;
   background-color: #fffaf0;
   background-image:
     radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
@@ -329,7 +333,6 @@ onUnmounted(() => stopVoice())
     radial-gradient(at 80% 90%, rgba(255,160,140,0.4) 0px, transparent 50%),
     linear-gradient(135deg, #fffcf5 0%, #ffe4cc 40%, #ffd1b3 70%, #ffc0a0 100%);
   position: relative;
-  overflow: hidden;
 }
 
 @property --rc1 {
@@ -445,10 +448,9 @@ onUnmounted(() => stopVoice())
   100% { --rc3: rgba(255, 190, 130, 0.48); }
 }
 
-.month-nav,
-.month-summary,
-.records-body,
-.input-bar-wrap {
+/* Header (month nav + summary) */
+.records-header {
+  flex-shrink: 0;
   position: relative;
   z-index: 1;
 }
@@ -512,13 +514,15 @@ onUnmounted(() => stopVoice())
   letter-spacing: -0.02em;
 }
 
-/* Records Body */
+/* Records Body (scrollable) */
 .records-body {
   flex: 1;
   min-height: 0;
-  padding: 0 16px calc(72px + 60px + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 0 16px 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .records-empty {
@@ -625,16 +629,12 @@ onUnmounted(() => stopVoice())
   height: 20px;
 }
 
-/* Input Bar */
+/* Input Bar (in-flow, flex-shrink:0) */
 .input-bar-wrap {
-  position: fixed;
-  bottom: calc(72px + 24px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 430px;
-  padding: 0 16px;
-  z-index: 90;
+  flex-shrink: 0;
+  padding: 8px 16px 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .input-bar {
@@ -698,6 +698,12 @@ onUnmounted(() => stopVoice())
 .bar-icon-btn svg {
   width: 20px;
   height: 20px;
+}
+
+/* Nav spacer (reserves height for fixed BottomNav) */
+.nav-spacer {
+  flex-shrink: 0;
+  height: calc(72px + env(safe-area-inset-bottom));
 }
 
 /* Saving */
