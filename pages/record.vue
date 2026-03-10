@@ -188,14 +188,8 @@ const confirmRecord = async () => {
     return
   }
 
-  if (isConfirmMode.value) {
-    clearRecords()
-    navigateTo('/')
-  }
-  else {
-    hasNotification.value = true
-    navigateTo('/complete')
-  }
+  hasNotification.value = true
+  navigateTo('/complete')
 }
 </script>
 
