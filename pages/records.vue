@@ -117,6 +117,7 @@ import type { BudgetRecord } from '~/types'
 definePageMeta({ layout: 'default' })
 
 const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 const { parseTextEntry } = useRecords()
 
 // Month state
@@ -177,6 +178,7 @@ const fetchRecords = async () => {
   const { data } = await (supabase as any)
     .from('expenses')
     .select('*')
+    .eq('user_id', user.value?.id)
     .gte('created_at', from)
     .lt('created_at', to)
     .order('created_at', { ascending: false })
@@ -233,6 +235,7 @@ const saveNewRecord = async (record: BudgetRecord) => {
     amount: record.amount,
     category: record.category,
     input_method: 'text',
+    user_id: user.value?.id,
   }])
   isSaving.value = false
   await fetchRecords()

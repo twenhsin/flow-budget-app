@@ -64,7 +64,7 @@ import type { HomeTab } from '~/types'
 
 definePageMeta({ layout: 'default' })
 
-const { clearRecords, addRecord, parseTextEntry } = useRecords()
+const { clearRecords, addRecord, parseTextEntryAI } = useRecords()
 
 // Tabs
 const activeTab = ref<HomeTab>('record')
@@ -113,7 +113,7 @@ const handleSubmit = async () => {
   if (activeTab.value === 'record') {
     inputValue.value = ''
     clearRecords()
-    addRecord(parseTextEntry(val))
+    addRecord(await parseTextEntryAI(val))
     navigateTo('/record?mode=confirm')
     return
   }

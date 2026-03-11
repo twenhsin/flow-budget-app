@@ -144,6 +144,7 @@
 definePageMeta({ layout: 'default' })
 
 const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 
 // ── SVG chart constants ──────────────────────────────────────────────────────
 const SVG_W = 300
@@ -272,6 +273,7 @@ const fetchData = async () => {
   const { data } = await (supabase as any)
     .from('expenses')
     .select('*')
+    .eq('user_id', user.value?.id)
     .gte('created_at', from)
     .lt('created_at', to)
   expenses.value = data ?? []

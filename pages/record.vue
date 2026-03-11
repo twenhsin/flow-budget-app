@@ -95,7 +95,7 @@ definePageMeta({ layout: 'bare' })
 const route = useRoute()
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
-const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry } = useRecords()
+const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry, parseTextEntryAI } = useRecords()
 const hasNotification = useState('hasNotification', () => false)
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
@@ -108,7 +108,7 @@ const isSaving = ref(false)
 const saveError = ref('')
 
 const { isListening, interimTranscript, startVoice, stopVoice, toggleVoice } = useVoiceInput({
-  onFinal: (text) => addRecord(parseTextEntry(text)),
+  onFinal: async (text) => addRecord(await parseTextEntryAI(text)),
 })
 
 const formattedDate = computed(() => {
@@ -120,22 +120,22 @@ onMounted(() => {
   if (mode.value === 'voice') startVoice()
 })
 
-const handleTextEnter = (e: KeyboardEvent) => {
+const handleTextEnter = async (e: KeyboardEvent) => {
   const input = e.target as HTMLInputElement
   const val = input.value.trim()
   if (!val) return
-  addRecord(parseTextEntry(val))
   input.value = ''
+  addRecord(await parseTextEntryAI(val))
 }
 
-const handleTextAdd = () => {
+const handleTextAdd = async () => {
   const input = textInput.value
   if (!input) return
   const val = input.value.trim()
   if (!val) return
-  addRecord(parseTextEntry(val))
   input.value = ''
   input.focus()
+  addRecord(await parseTextEntryAI(val))
 }
 
 const openEdit = (index: number) => {

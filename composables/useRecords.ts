@@ -37,6 +37,19 @@ export const useRecords = () => {
     return { name: name || text, amount, category: guessCategory(name) }
   }
 
+  const parseTextEntryAI = async (text: string): Promise<BudgetRecord> => {
+    try {
+      const data = await $fetch<{ name: string; amount: number; category: string }>('/api/parse-entry', {
+        method: 'POST',
+        body: { text },
+      })
+      return { name: data.name, amount: data.amount, category: data.category }
+    }
+    catch {
+      return parseTextEntry(text)
+    }
+  }
+
   return {
     pendingRecords,
     addRecord,
@@ -44,6 +57,7 @@ export const useRecords = () => {
     updateRecord,
     clearRecords,
     parseTextEntry,
+    parseTextEntryAI,
     guessCategory,
   }
 }
