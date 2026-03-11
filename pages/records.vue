@@ -118,7 +118,7 @@ definePageMeta({ layout: 'default' })
 
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
-const { parseTextEntry } = useRecords()
+const { parseTextEntry, parseTextEntryAI } = useRecords()
 
 // Month state
 const today = new Date()
@@ -246,7 +246,7 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   const val = input.value.trim()
   if (!val) return
   input.value = ''
-  await saveNewRecord(parseTextEntry(val))
+  await saveNewRecord(await parseTextEntryAI(val))
 }
 
 const handleAddClick = async () => {
@@ -255,12 +255,12 @@ const handleAddClick = async () => {
   const val = input.value.trim()
   if (!val) return
   input.value = ''
-  await saveNewRecord(parseTextEntry(val))
+  await saveNewRecord(await parseTextEntryAI(val))
 }
 
 // Voice
 const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
-  onFinal: (text) => saveNewRecord(parseTextEntry(text)),
+  onFinal: async (text) => saveNewRecord(await parseTextEntryAI(text)),
 })
 </script>
 

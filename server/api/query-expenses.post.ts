@@ -1,4 +1,4 @@
-import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseClient } from '#supabase/server'
 import { CATEGORY_NAMES } from '../../constants/categories'
 
 export default defineEventHandler(async (event) => {
@@ -117,10 +117,9 @@ queryType 規則：
   console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, category, nameKeywords: keywords, queryType, title }))
 
   // Step 2 — 查詢 Supabase
-  const user = await serverSupabaseUser(event)
-  if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
-
   const client = await serverSupabaseClient(event)
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
   // Debug: 印出資料庫前5筆的 created_at 原始值
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

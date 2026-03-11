@@ -103,9 +103,36 @@
                 </div>
                 <span class="preview-name">{{ addCatName }}</span>
               </div>
+              <div class="preview-actions">
+                <button class="preview-action-btn" @click="rerollSuggestion">換一個</button>
+                <button class="preview-action-btn" @click="fetchPickerIcons">自己選</button>
+              </div>
               <div class="add-modal-actions">
                 <button class="add-modal-cancel" @click="addStep = 'input'">重新輸入</button>
                 <button class="add-modal-confirm" @click="confirmAddCategory">確認新增</button>
+              </div>
+            </template>
+
+            <!-- Step 4: icon picker -->
+            <template v-else-if="addStep === 'picker'">
+              <div v-if="pickerLoading" class="add-loading">
+                <div class="add-spinner" />
+                <span>AI 推薦中...</span>
+              </div>
+              <div v-else class="icon-picker-grid">
+                <button
+                  v-for="iconName in pickerIcons"
+                  :key="iconName"
+                  class="icon-picker-btn"
+                  :class="{ selected: suggestion?.icon === iconName }"
+                  :style="{ background: suggestion?.color }"
+                  @click="pickIcon(iconName)"
+                >
+                  <component :is="lucideIcon(iconName)" :size="22" color="white" :stroke-width="1.8" />
+                </button>
+              </div>
+              <div class="add-modal-actions" style="margin-top: 16px">
+                <button class="add-modal-cancel" @click="addStep = 'preview'">返回</button>
               </div>
             </template>
             </div>
@@ -172,19 +199,22 @@ const selectCategory = (cat: string) => {
 
 // ── Add Category Modal ─────────────────────────────────────────────────────────
 
-type AddStep = 'input' | 'loading' | 'preview'
+type AddStep = 'input' | 'loading' | 'preview' | 'picker'
 
 const addModalOpen = ref(false)
 const addStep = ref<AddStep>('input')
 const addCatName = ref('')
 const addCatInput = ref<HTMLInputElement | null>(null)
 const suggestion = ref<{ icon: string; color: string } | null>(null)
+const pickerIcons = ref<string[]>([])
+const pickerLoading = ref(false)
 
 const openAddModal = () => {
   dropdownOpen.value = false
   addCatName.value = ''
   addStep.value = 'input'
   suggestion.value = null
+  pickerIcons.value = []
   addModalOpen.value = true
   nextTick(() => addCatInput.value?.focus())
 }
@@ -193,13 +223,20 @@ const closeAddModal = () => {
   addModalOpen.value = false
 }
 
+const getUsedColors = () => [
+  ...CATEGORIES.map(c => c.color),
+  ...userCats.value.map(c => c.color),
+]
+
 const suggestCategory = async () => {
   if (!addCatName.value.trim()) return
   addStep.value = 'loading'
   try {
+    const usedIcons = userCats.value.map(c => c.icon)
+    const excludeColors = getUsedColors()
     const data = await $fetch<{ icon: string; color: string }>('/api/suggest-category', {
       method: 'POST',
-      body: { name: addCatName.value.trim() },
+      body: { name: addCatName.value.trim(), usedIcons, excludeColors },
     })
     suggestion.value = data
     addStep.value = 'preview'
@@ -208,6 +245,48 @@ const suggestCategory = async () => {
     suggestion.value = { icon: 'ShoppingBag', color: '#C4B49A' }
     addStep.value = 'preview'
   }
+}
+
+const fetchPickerIcons = async () => {
+  addStep.value = 'picker'
+  pickerLoading.value = true
+  try {
+    const usedIcons = userCats.value.map(c => c.icon)
+    const data = await $fetch<{ icons: string[] }>('/api/suggest-category', {
+      method: 'POST',
+      body: { name: addCatName.value.trim(), usedIcons, mode: 'multiple' },
+    })
+    pickerIcons.value = data.icons ?? []
+  }
+  catch {
+    pickerIcons.value = ['ShoppingBag', 'Heart', 'Gift', 'Briefcase', 'Scissors', 'Camera']
+  }
+  pickerLoading.value = false
+}
+
+const rerollSuggestion = async () => {
+  if (!suggestion.value) return
+  const excludeIcon = suggestion.value.icon
+  addStep.value = 'loading'
+  try {
+    const usedIcons = userCats.value.map(c => c.icon)
+    const excludeColors = getUsedColors()
+    const data = await $fetch<{ icon: string; color: string }>('/api/suggest-category', {
+      method: 'POST',
+      body: { name: addCatName.value.trim(), usedIcons, excludeIcon, excludeColors },
+    })
+    suggestion.value = data
+    addStep.value = 'preview'
+  }
+  catch {
+    addStep.value = 'preview'
+  }
+}
+
+const pickIcon = (iconName: string) => {
+  if (!suggestion.value) return
+  suggestion.value = { ...suggestion.value, icon: iconName }
+  addStep.value = 'preview'
 }
 
 const confirmAddCategory = () => {
@@ -460,15 +539,16 @@ h3 {
 /* ── Add Category Modal ── */
 
 .add-modal-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 300;
   background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   padding: 24px;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom) + 24px);
 }
 
 .add-modal {
@@ -476,6 +556,7 @@ h3 {
   border-radius: var(--radius-lg);
   padding: 24px;
   width: 100%;
+  max-width: 382px;
   box-shadow: 0 8px 32px rgba(139, 94, 60, 0.2);
 }
 
@@ -564,7 +645,57 @@ h3 {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 0 20px;
+  padding: 12px 0 12px;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.preview-action-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgba(224, 122, 79, 0.35);
+  background: transparent;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.preview-action-btn:active {
+  background: rgba(224, 122, 79, 0.08);
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.icon-picker-btn {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.icon-picker-btn:active {
+  transform: scale(0.9);
+}
+
+.icon-picker-btn.selected {
+  border-color: white;
+  box-shadow: 0 0 0 2.5px var(--accent);
 }
 
 .preview-icon {

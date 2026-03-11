@@ -1,4 +1,5 @@
 import type { BudgetRecord } from '~/types'
+import { getUserCategories } from '~/constants/categories'
 
 export const useRecords = () => {
   const pendingRecords = useState<BudgetRecord[]>('pendingRecords', () => [])
@@ -39,9 +40,10 @@ export const useRecords = () => {
 
   const parseTextEntryAI = async (text: string): Promise<BudgetRecord> => {
     try {
+      const userCategories = getUserCategories().map(c => c.name)
       const data = await $fetch<{ name: string; amount: number; category: string }>('/api/parse-entry', {
         method: 'POST',
-        body: { text },
+        body: { text, userCategories },
       })
       return { name: data.name, amount: data.amount, category: data.category }
     }

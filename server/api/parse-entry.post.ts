@@ -8,13 +8,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'OPENAI_API_KEY 未設定' })
   }
 
-  const { text } = await readBody(event)
-  console.log('[parse-entry] 收到 text:', text)
+  const { text, userCategories = [] } = await readBody(event)
   if (!text?.trim()) {
     throw createError({ statusCode: 400, message: '缺少輸入文字' })
   }
 
-  const categoryList = CATEGORY_NAMES.join('、')
+  const allCategories = [...CATEGORY_NAMES, ...(userCategories as string[])]
+  const categoryList = allCategories.join('、')
 
   const gptBody = {
     model: 'gpt-4o',
@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
   catch { throw createError({ statusCode: 502, message: 'GPT 回應非 JSON' }) }
 
   const content: string = gptData.choices?.[0]?.message?.content ?? ''
-  console.log('[parse-entry] GPT 回傳 content:', content)
+  console.log('[parse-entry] GPT content:', content)
   const stripped = content.replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/im, '').trim()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
