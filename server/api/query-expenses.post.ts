@@ -76,10 +76,11 @@ ${dateHints}
 {
   "dateFrom": "YYYY-MM-DD",
   "dateTo": "YYYY-MM-DD",
-  "category": "類別名稱或null",
-  "multiCategories": ["類別1", "類別2"] 或 null,
-  "nameKeywords": ["品項1", "品項2"] 或 [],
-  "queryType": "total 或 list 或 ranking 或 monthly 或 grouped",
+  "queries": [
+    { "type": "category", "value": "類別名稱" },
+    { "type": "nameKeyword", "value": "品項關鍵字" }
+  ],
+  "queryType": "total | list | ranking | monthly | grouped",
   "title": "精確的繁體中文結果頁標題"
 }
 
@@ -87,36 +88,30 @@ ${dateHints}
 - 嚴格依照上方對照表，「今天」只查今天、「昨天」只查昨天，不要 fallback 到本月
 - dateFrom 和 dateTo 都是含頭含尾的日期（YYYY-MM-DD）
 
-category 規則：
-- 預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
-- 查詢關鍵字若與自訂類別名稱相符或相近，優先填入自訂類別的完整名稱，不要對應到預設類別
-- category 必須是以上預設類別或自訂類別之一，否則設為 null
-- 如果使用者問的是品項名稱（例如咖啡、便當、計程車、珍奶），category 設為 null，改用 nameKeywords 陣列回傳所有關鍵字
-- 如果使用者明確說某個類別（例如餐飲、交通），才填入 category，nameKeywords 設為 []
-
-multiCategories 規則：
-- 當用戶的關鍵字同時符合「自訂類別名稱」且有語意相近的「預設類別」時，設此欄位
-- 例如「spa」是自訂類別、「休閒」是語意相近的預設類別 → multiCategories: ["spa", "休閒"]
-- 設定 multiCategories 時：category 設 null、nameKeywords 設 []、queryType 設 "grouped"
-- 若無此情況設為 null
-
-nameKeywords 規則：
-- 若使用者提到多個品項或關鍵字（例如「咖啡和便當」、「按摩與學習」），全部放入陣列，順序不影響查詢結果
-- nameKeywords 的每個元素都是獨立查詢，不受陣列順序影響
-- 若無品項關鍵字，設為空陣列 []
+queries 規則：
+- 用戶提到的每個關鍵字都必須各自列為一個獨立的 query 項目，不可省略任何一個
+- type "category"：關鍵字對應到已知類別（以下預設類別或自訂類別）時使用
+  預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
+  自訂類別優先比對，相符則使用完整自訂類別名稱
+- type "nameKeyword"：關鍵字是品項名稱（如咖啡、便當、按摩）時使用
+- 多個關鍵字範例：
+  「學習與spa」→ [{ type:"category", value:"學習" }, { type:"category", value:"spa" }]
+  「按摩和咖啡」→ [{ type:"nameKeyword", value:"按摩" }, { type:"nameKeyword", value:"咖啡" }]
+  「spa和餐飲」→ [{ type:"category", value:"spa" }, { type:"category", value:"餐飲" }]
+- 沒有特定關鍵字（查全部）時設為 []
 
 title 規則：
 - 必須直接使用用戶原始輸入的時間詞和關鍵字，不可替換成同義詞或預設類別名稱
 - 若用戶說「今天」，標題用「今天」；說「這週」，標題用「這週」；不要改成「本月」或具體日期
-- 例如用戶輸入「今天學習消費」，標題應為「今天學習消費」
-- 例如用戶輸入「伙食和學習」，標題應為「這個月伙食和學習支出」，不能改成「餐飲與教育」
+- 例如用戶輸入「今天學習消費」→「今天學習消費」
+- 例如用戶輸入「伙食和學習」→「這個月伙食和學習支出」，不能改成「餐飲與教育」
 
 queryType 規則：
 - total：問總金額、花多少
 - list：問明細、有哪些
 - ranking：問最高、排行、哪個類別最多
 - monthly：問逐月、每個月、各月比較
-- grouped：問各自、分別、每個品項各花多少（nameKeywords 有多個值時優先考慮）`,
+- grouped：queries 有多項時優先使用，每個 query 各自成一組`,
       },
     ],
     max_tokens: 400,
@@ -168,17 +163,17 @@ queryType 規則：
     catch { throw createError({ statusCode: 502, message: '無法解析 GPT JSON' }) }
   }
 
-  const { dateFrom, category, nameKeywords, queryType, title, multiCategories } = parsed
-  const keywords: string[] = Array.isArray(nameKeywords) ? nameKeywords : []
-  const multiCats: string[] = Array.isArray(multiCategories) ? multiCategories : []
+  const { dateFrom, queryType, title } = parsed
   // dateTo 加一天，確保當天資料包含在內（.lt 是嚴格小於）
   const dateToExclusive = new Date(parsed.dateTo)
   dateToExclusive.setDate(dateToExclusive.getDate() + 1)
   const dateTo = dateToExclusive.toISOString().slice(0, 10)
 
-  const effectiveQueryType = multiCats.length > 0 ? 'grouped' : queryType
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const queryItems: { type: string; value: string }[] = Array.isArray(parsed.queries) ? parsed.queries : []
+  const effectiveQueryType = queryItems.length > 1 ? 'grouped' : queryType
 
-  console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, category, nameKeywords: keywords, multiCats, queryType: effectiveQueryType, title }))
+  console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, queryItems, queryType: effectiveQueryType, title }))
 
   // Step 2 — 查詢資料
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,28 +181,37 @@ queryType 規則：
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let groups: { label: string; total: number; items: any[] }[] = []
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
+
   if (isGuest) {
-    if (multiCats.length > 0) {
-      // 多類別分組：每個類別分別過濾
-      for (const cat of multiCats) {
+    if (queryItems.length > 0) {
+      // 每個 query 獨立過濾
+      for (const q of queryItems) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const catItems = (guestExpenses as any[]).filter((r: any) => {
+        const qItems = (guestExpenses as any[]).filter((r: any) => {
           const d = r.created_at.slice(0, 10)
-          return d >= dateFrom && d < dateTo && r.category === cat
+          if (d < dateFrom || d >= dateTo) return false
+          if (q.type === 'category') return r.category === q.value
+          if (q.type === 'nameKeyword') return r.name.toLowerCase().includes(q.value.toLowerCase())
+          return false
         })
-        groups.push({ label: cat, total: catItems.reduce((s: number, r: { amount: number }) => s + r.amount, 0), items: catItems })
+        groups.push({ label: q.value, total: sumAmount(qItems), items: qItems })
       }
-      items = groups.flatMap(g => g.items)
+      // 去重合並成 items（供 total/list/ranking/monthly 模式使用）
+      const seen = new Set<string>()
+      items = groups.flatMap(g => g.items).filter((r: { id: string }) => {
+        if (seen.has(r.id)) return false
+        seen.add(r.id)
+        return true
+      })
     }
     else {
-      // 訪客模式：直接過濾 localStorage 資料
+      // 無關鍵字：取日期範圍內全部
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      items = (guestExpenses as any[]).filter((r: { created_at: string; category: string; name: string }) => {
+      items = (guestExpenses as any[]).filter((r: { created_at: string }) => {
         const d = r.created_at.slice(0, 10)
-        if (d < dateFrom || d >= dateTo) return false
-        if (category && r.category !== category) return false
-        if (keywords.length > 0 && !keywords.some(k => r.name.toLowerCase().includes(k.toLowerCase()))) return false
-        return true
+        return d >= dateFrom && d < dateTo
       })
     }
   }
@@ -216,40 +220,47 @@ queryType 規則：
     const { data: { user } } = await client.auth.getUser()
     if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-    if (multiCats.length > 0) {
-      // 多類別分組：每個類別各跑一次 Supabase 查詢
-      for (const cat of multiCats) {
+    if (queryItems.length > 0) {
+      // 每個 query 各跑一次 Supabase
+      for (const q of queryItems) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: catData } = await (client as any)
+        let qQuery = (client as any)
           .from('expenses')
           .select('id, name, amount, category, created_at')
           .eq('user_id', user.id)
-          .eq('category', cat)
           .gte('created_at', dateFrom)
           .lt('created_at', dateTo)
-          .order('created_at', { ascending: false })
-        const catItems = catData ?? []
-        groups.push({ label: cat, total: catItems.reduce((s: number, r: { amount: number }) => s + r.amount, 0), items: catItems })
+
+        if (q.type === 'category') {
+          qQuery = qQuery.eq('category', q.value)
+        }
+        else if (q.type === 'nameKeyword') {
+          qQuery = qQuery.ilike('name', `%${q.value}%`)
+        }
+
+        const { data: qData, error: qError } = await qQuery.order('created_at', { ascending: false })
+        if (qError) console.error(`[query-expenses] 查詢 "${q.value}" 失敗:`, qError)
+        const qItems = qData ?? []
+        groups.push({ label: q.value, total: sumAmount(qItems), items: qItems })
       }
-      items = groups.flatMap(g => g.items)
+      // 去重合並成 items
+      const seen = new Set<string>()
+      items = groups.flatMap(g => g.items).filter((r: { id: string }) => {
+        if (seen.has(r.id)) return false
+        seen.add(r.id)
+        return true
+      })
     }
     else {
+      // 無關鍵字：取日期範圍內全部
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (client as any)
+      const { data, error } = await (client as any)
         .from('expenses')
         .select('id, name, amount, category, created_at')
         .eq('user_id', user.id)
         .gte('created_at', dateFrom)
         .lt('created_at', dateTo)
-
-      if (category) query = query.eq('category', category)
-
-      if (keywords.length > 0) {
-        const orFilter = keywords.map(k => `name.ilike.%${k}%`).join(',')
-        query = query.or(orFilter)
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) {
         console.error('[query-expenses] Supabase 查詢失敗:', error)
@@ -259,26 +270,13 @@ queryType 規則：
     }
   }
 
-  const total: number = items.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
-
-  // 關鍵字分組（僅在非多類別模式下）
-  if (effectiveQueryType === 'grouped' && keywords.length > 0 && multiCats.length === 0) {
-    groups = keywords.map((k) => {
-      const groupItems = items.filter((r: { name: string }) =>
-        r.name.toLowerCase().includes(k.toLowerCase()),
-      )
-      return {
-        label: k,
-        total: groupItems.reduce((s: number, r: { amount: number }) => s + r.amount, 0),
-        items: groupItems,
-      }
-    })
-  }
+  const total: number = sumAmount(items)
 
   // Step 3 — 回傳結果
   console.log('[query-expenses] 回傳 response:', JSON.stringify({
     effectiveQueryType,
     total,
+    itemsCount: items.length,
     groupsCount: groups.length,
     groups: groups.map(g => ({ label: g.label, total: g.total, itemsCount: g.items.length })),
   }))
