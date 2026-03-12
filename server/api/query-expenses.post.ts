@@ -104,10 +104,10 @@ queries 規則：
 - 沒有特定關鍵字（查全部）時設為 []
 
 title 規則：
-- 回傳 HTML 格式：時間詞（純文字）+ 各關鍵字（用 <strong> 包裹）+ 消費（純文字）
-- 格式範例：「本月 <strong>學習</strong> <strong>spa</strong> 消費」
-- 若只有一個關鍵字：「今天 <strong>學習</strong> 消費」
-- 無關鍵字（查全部）：「本月消費」（不加 <strong>，時間詞直接加「消費」）
+- 回傳 HTML 格式：時間詞（純文字）+ 各關鍵字（用 <span class="title-keyword"> 包裹）+ 消費（純文字）
+- 格式範例：「本月 <span class="title-keyword">學習</span> <span class="title-keyword">spa</span> 消費」
+- 若只有一個關鍵字：「今天 <span class="title-keyword">學習</span> 消費」
+- 無關鍵字（查全部）：「本月消費」（不加 span，時間詞直接加「消費」）
 - 時間詞必須直接使用用戶原始輸入的詞，不可替換（「今天」→「今天」，「這週」→「這週」）
 - 關鍵字必須直接使用用戶原始輸入，不可替換成同義詞或預設類別名稱
 

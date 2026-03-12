@@ -533,8 +533,9 @@ const monthlyBars = computed(() => {
   margin-bottom: 4px;
 }
 
-.qr-title :deep(strong) {
-  font-weight: 700;
+.qr-title :deep(.title-keyword) {
+  color: var(--accent);
+  font-weight: 400;
 }
 
 .qr-sub {
