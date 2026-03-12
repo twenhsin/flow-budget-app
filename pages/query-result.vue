@@ -2,7 +2,7 @@
   <div class="qr-screen">
     <!-- Header -->
     <div class="qr-header">
-      <div class="qr-title">{{ result.title }}</div>
+      <div class="qr-title" v-html="result.title" />
       <div class="qr-sub">{{ formattedRange }}</div>
     </div>
 
@@ -371,6 +371,10 @@ const monthlyBars = computed(() => {
   font-weight: 300;
   color: var(--text);
   margin-bottom: 4px;
+}
+
+.qr-title :deep(strong) {
+  font-weight: 700;
 }
 
 .qr-sub {
