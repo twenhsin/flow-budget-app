@@ -9,14 +9,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'OPENAI_API_KEY 未設定' })
   }
 
-  const { question, guestExpenses } = await readBody(event)
+  const { question, guestExpenses, userCategories } = await readBody(event)
   if (!question?.trim()) {
     throw createError({ statusCode: 400, message: '缺少查詢問題' })
   }
 
   const isGuest = Array.isArray(guestExpenses)
+  const userCatNames: string[] = Array.isArray(userCategories) ? userCategories : []
 
   const today = new Date().toISOString().slice(0, 10)
+
+  const userCatLine = userCatNames.length > 0
+    ? `\n- 用戶自訂類別（優先比對）：${userCatNames.join('、')}`
+    : ''
 
   // Step 1 — GPT-4o 解析問題
   const gptBody = {
@@ -39,7 +44,9 @@ export default defineEventHandler(async (event) => {
 }
 
 category 規則：
-- category 只能是以下固定類別之一：${CATEGORY_NAMES.join('、')}
+- 預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
+- 查詢關鍵字若與自訂類別名稱相符或相近，優先填入自訂類別的完整名稱，不要對應到預設類別
+- category 必須是以上預設類別或自訂類別之一，否則設為 null
 - 如果使用者問的是品項名稱（例如咖啡、便當、計程車、珍奶），category 設為 null，改用 nameKeywords 陣列回傳所有關鍵字
 - 如果使用者明確說某個類別（例如餐飲、交通），才填入 category，nameKeywords 設為 []
 

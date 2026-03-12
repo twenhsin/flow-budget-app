@@ -67,6 +67,7 @@ definePageMeta({ layout: 'default' })
 
 const user = useSupabaseUser()
 const { clearRecords, addRecord, parseTextEntryAI } = useRecords()
+const { categories } = useUserCategories()
 
 // Tabs
 const activeTab = ref<HomeTab>('record')
@@ -125,7 +126,10 @@ const handleSubmit = async () => {
   isQuerying.value = true
   queryError.value = ''
   try {
-    const body: Record<string, unknown> = { question: val }
+    const body: Record<string, unknown> = {
+      question: val,
+      userCategories: categories.value.map(c => c.name),
+    }
     if (!user.value) body.guestExpenses = getGuestExpenses()
     const data = await $fetch<QueryResult>('/api/query-expenses', {
       method: 'POST',
