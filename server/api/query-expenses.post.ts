@@ -94,10 +94,13 @@ queries 規則：
   預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
   自訂類別優先比對，相符則使用完整自訂類別名稱
 - type "nameKeyword"：關鍵字是品項名稱（如咖啡、便當、按摩）時使用
+- 即使關鍵字之間沒有任何標點符號，也必須嘗試將輸入拆解為多個關鍵字，不可只取第一個
+  例如「3c學習按摩」→ [{ type:"nameKeyword", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
 - 多個關鍵字範例：
   「學習與spa」→ [{ type:"category", value:"學習" }, { type:"category", value:"spa" }]
   「按摩和咖啡」→ [{ type:"nameKeyword", value:"按摩" }, { type:"nameKeyword", value:"咖啡" }]
   「spa和餐飲」→ [{ type:"category", value:"spa" }, { type:"category", value:"餐飲" }]
+  「3c學習按摩」→ [{ type:"nameKeyword", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
 - 沒有特定關鍵字（查全部）時設為 []
 
 title 規則：
