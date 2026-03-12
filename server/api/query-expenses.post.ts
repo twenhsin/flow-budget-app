@@ -17,7 +17,45 @@ export default defineEventHandler(async (event) => {
   const isGuest = Array.isArray(guestExpenses)
   const userCatNames: string[] = Array.isArray(userCategories) ? userCategories : []
 
-  const today = new Date().toISOString().slice(0, 10)
+  const todayDate = new Date()
+  const today = todayDate.toISOString().slice(0, 10)
+
+  // 預計算常用相對日期，直接注入 prompt 避免 AI 自行計算出錯
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+  const yesterday = new Date(todayDate)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  // 本週一（週日 offset = -6，其他 = -(weekday-1)）
+  const dow = todayDate.getDay()
+  const thisWeekMonday = new Date(todayDate)
+  thisWeekMonday.setDate(thisWeekMonday.getDate() - (dow === 0 ? 6 : dow - 1))
+
+  // 上週一 & 上週日
+  const lastWeekMonday = new Date(thisWeekMonday)
+  lastWeekMonday.setDate(lastWeekMonday.getDate() - 7)
+  const lastWeekSunday = new Date(lastWeekMonday)
+  lastWeekSunday.setDate(lastWeekSunday.getDate() + 6)
+
+  // 本月第一天 & 上月第一天/最後一天
+  const thisMonthFirst = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1)
+  const lastMonthFirst = new Date(todayDate.getFullYear(), todayDate.getMonth() - 1, 1)
+  const lastMonthLast = new Date(todayDate.getFullYear(), todayDate.getMonth(), 0)
+
+  const dateHints = `
+相對日期對照表（基於今天 ${today}）：
+- 今天：dateFrom=${today}, dateTo=${today}
+- 昨天：dateFrom=${fmtDate(yesterday)}, dateTo=${fmtDate(yesterday)}
+- 本週：dateFrom=${fmtDate(thisWeekMonday)}, dateTo=${today}
+- 上週：dateFrom=${fmtDate(lastWeekMonday)}, dateTo=${fmtDate(lastWeekSunday)}
+- 本月：dateFrom=${fmtDate(thisMonthFirst)}, dateTo=${today}
+- 上個月：dateFrom=${fmtDate(lastMonthFirst)}, dateTo=${fmtDate(lastMonthLast)}
+- 今年：dateFrom=${todayDate.getFullYear()}-01-01, dateTo=${today}
+- 近7天：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setDate(d.getDate() - 6); return d })())}, dateTo=${today}
+- 近30天：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setDate(d.getDate() - 29); return d })())}, dateTo=${today}
+- 近三個月：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 3); return d })())}, dateTo=${today}
+請嚴格依此對照表設定日期，不要自行推算。`
 
   const userCatLine = userCatNames.length > 0
     ? `\n- 用戶自訂類別（優先比對）：${userCatNames.join('、')}`
@@ -32,6 +70,7 @@ export default defineEventHandler(async (event) => {
         content: `你是一個記帳 app 的查詢解析器。
 今天日期：${today}
 使用者問題：${question}
+${dateHints}
 
 請解析成以下 JSON 格式，只回傳 JSON，不要有其他文字：
 {
@@ -43,6 +82,10 @@ export default defineEventHandler(async (event) => {
   "queryType": "total 或 list 或 ranking 或 monthly 或 grouped",
   "title": "精確的繁體中文結果頁標題"
 }
+
+日期規則：
+- 嚴格依照上方對照表，「今天」只查今天、「昨天」只查昨天，不要 fallback 到本月
+- dateFrom 和 dateTo 都是含頭含尾的日期（YYYY-MM-DD）
 
 category 規則：
 - 預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
@@ -58,14 +101,15 @@ multiCategories 規則：
 - 若無此情況設為 null
 
 nameKeywords 規則：
-- 若使用者提到多個品項（例如「咖啡和便當」），全部放入陣列：["咖啡", "便當"]
+- 若使用者提到多個品項或關鍵字（例如「咖啡和便當」、「按摩與學習」），全部放入陣列，順序不影響查詢結果
+- nameKeywords 的每個元素都是獨立查詢，不受陣列順序影響
 - 若無品項關鍵字，設為空陣列 []
 
 title 規則：
-- 必須精確反映查詢的時間範圍與項目，不要用預設範例
-- 必須包含用戶原始輸入的關鍵字，不可替換成同義詞或預設類別名稱
+- 必須直接使用用戶原始輸入的時間詞和關鍵字，不可替換成同義詞或預設類別名稱
+- 若用戶說「今天」，標題用「今天」；說「這週」，標題用「這週」；不要改成「本月」或具體日期
+- 例如用戶輸入「今天學習消費」，標題應為「今天學習消費」
 - 例如用戶輸入「伙食和學習」，標題應為「這個月伙食和學習支出」，不能改成「餐飲與教育」
-- 時間描述用自然語言：這個月、上個月、今年、近三個月（不要用日期數字）
 
 queryType 規則：
 - total：問總金額、花多少
@@ -75,7 +119,7 @@ queryType 規則：
 - grouped：問各自、分別、每個品項各花多少（nameKeywords 有多個值時優先考慮）`,
       },
     ],
-    max_tokens: 300,
+    max_tokens: 400,
   }
 
   let gptResponse: Response

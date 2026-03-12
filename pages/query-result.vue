@@ -56,7 +56,7 @@
       <!-- grouped: per-keyword sections -->
       <template v-else-if="result.queryType === 'grouped'">
         <div
-          v-for="(g, gi) in result.groups"
+          v-for="(g, gi) in result.groups.filter(g => g.items.length > 0)"
           :key="g.label"
           class="item-card"
           :class="{ 'group-gap': gi > 0 }"
@@ -78,7 +78,7 @@
           </div>
           <div v-if="g.items.length === 0" class="item-empty">無符合紀錄</div>
         </div>
-        <div v-if="result.groups.length === 0" class="item-card">
+        <div v-if="result.groups.every(g => g.items.length === 0)" class="item-card">
           <div class="item-empty">此期間無紀錄</div>
         </div>
       </template>
