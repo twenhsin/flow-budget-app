@@ -124,9 +124,12 @@ export function useUserCategories() {
   /** 新增類別：已登入寫 Supabase，訪客寫 localStorage */
   const saveCat = async (cat: UserCategory) => {
     if (user.value) {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('categories')
         .insert({ user_id: user.value.id, name: cat.name, color: cat.color, icon: cat.icon })
+        .select()
+        .single()
+      console.log('saveCat result:', inserted, error)
       if (error) {
         console.error('saveCat error:', error)
         return
