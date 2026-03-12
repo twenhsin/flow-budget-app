@@ -54,6 +54,7 @@ definePageMeta({ layout: false })
 
 const supabase = useSupabaseClient()
 const router = useRouter()
+const { mergeLocalToSupabase } = useUserCategories()
 
 const mode = ref<'login' | 'signup'>('login')
 const email = ref('')
@@ -83,6 +84,7 @@ const handleSubmit = async () => {
         : error.message
     }
     else {
+      await mergeLocalToSupabase()
       router.push('/')
     }
   }
