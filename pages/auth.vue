@@ -50,9 +50,12 @@
 </template>
 
 <script setup lang="ts">
+import { getGuestExpenses } from '~/composables/useGuestExpenses'
+
 definePageMeta({ layout: false })
 
-const supabase = useSupabaseClient()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = useSupabaseClient() as any
 const router = useRouter()
 const { mergeLocalToSupabase } = useUserCategories()
 
@@ -67,6 +70,65 @@ watch(mode, () => {
   errorMsg.value = ''
   successMsg.value = ''
 })
+
+// ── 訪客消費紀錄合併到 Supabase ───────────────────────────────────────────────
+const mergeLocalExpensesToSupabase = async (): Promise<number> => {
+  const local = getGuestExpenses()
+  if (local.length === 0) return 0
+
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  if (!currentUser) return 0
+
+  // 取出 Supabase 既有紀錄，用於重複判斷
+  const { data: existing } = await supabase
+    .from('expenses')
+    .select('id, name, amount, created_at')
+    .eq('user_id', currentUser.id)
+  const existingList: { id: string; name: string; amount: number; created_at: string }[]
+    = Array.isArray(existing) ? existing : []
+
+  let syncCount = 0
+
+  for (const exp of local) {
+    try {
+      const expDate = exp.created_at.slice(0, 10)
+
+      // 找出同一天、同名稱、同金額的重複紀錄
+      const duplicates = existingList.filter(e =>
+        e.name === exp.name
+        && e.amount === exp.amount
+        && e.created_at.slice(0, 10) === expDate,
+      )
+
+      // 刪除 Supabase 端的重複紀錄
+      for (const dup of duplicates) {
+        await supabase.from('expenses').delete().eq('id', dup.id)
+      }
+
+      // insert localStorage 版本（保留原始 created_at）
+      const { error } = await supabase.from('expenses').insert({
+        user_id: currentUser.id,
+        name: exp.name,
+        amount: exp.amount,
+        category: exp.category,
+        created_at: exp.created_at,
+        input_method: exp.input_method ?? 'text',
+      })
+
+      if (error) {
+        console.error('mergeLocalExpensesToSupabase insert error:', error, exp)
+      }
+      else {
+        syncCount++
+      }
+    }
+    catch (e) {
+      console.error('mergeLocalExpensesToSupabase unexpected error:', e, exp)
+    }
+  }
+
+  return syncCount
+}
 
 const handleSubmit = async () => {
   errorMsg.value = ''
@@ -84,7 +146,12 @@ const handleSubmit = async () => {
         : error.message
     }
     else {
+      const syncedCount = await mergeLocalExpensesToSupabase()
       await mergeLocalToSupabase()
+      if (syncedCount > 0) {
+        successMsg.value = `已將 ${syncedCount} 筆本地紀錄同步到雲端`
+        await new Promise(resolve => setTimeout(resolve, 1500))
+      }
       router.push('/')
     }
   }
