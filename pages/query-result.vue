@@ -62,7 +62,7 @@
           :class="{ 'group-gap': gi > 0 }"
         >
           <div class="group-header">
-            <span class="group-label">{{ g.label }}</span>
+            <span class="group-label">{{ groupDisplayLabel(g) }}</span>
             <span class="group-total">-{{ formatAmount(g.total) }}</span>
           </div>
           <div class="group-divider" />
@@ -177,6 +177,8 @@
 </template>
 
 <script setup lang="ts">
+import { getGuestExpenses } from '~/composables/useGuestExpenses'
+
 definePageMeta({ layout: 'bare' })
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -230,6 +232,11 @@ const formattedRange = computed(() =>
 )
 
 // ── Query ─────────────────────────────────────────────────────────────────────
+import { catColor as catColorBuiltin } from '~/constants/categories'
+const user = useSupabaseUser()
+const { categories, getCatColor, load: loadCategories } = useUserCategories()
+const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
+
 const handleSubmit = async () => {
   const q = inputValue.value.trim()
   if (!q || isLoading.value) return
@@ -239,9 +246,14 @@ const handleSubmit = async () => {
   errorMsg.value = ''
 
   try {
+    const body: Record<string, unknown> = {
+      question: q,
+      userCategories: categories.value.map(c => c.name),
+    }
+    if (!user.value) body.guestExpenses = getGuestExpenses()
     const data = await $fetch<QueryResult>('/api/query-expenses', {
       method: 'POST',
-      body: { question: q },
+      body,
     })
     result.value = data
   }
@@ -255,10 +267,13 @@ const handleSubmit = async () => {
   }
 }
 
-// ── Category colours & icons ───────────────────────────────────────────────────
-import { catColor as catColorBuiltin } from '~/constants/categories'
-const { getCatColor, load: loadCategories } = useUserCategories()
-const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
+// grouped 分組標題：優先顯示紀錄的實際 category 名稱
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function groupDisplayLabel(g: GroupEntry): string {
+  if (g.items.length === 0) return g.label
+  const cats = [...new Set(g.items.map((item: any) => item.category as string))]
+  return cats.length === 1 ? cats[0] : g.label
+}
 
 onMounted(async () => {
   await loadCategories()
