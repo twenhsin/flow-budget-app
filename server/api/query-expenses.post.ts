@@ -9,10 +9,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'OPENAI_API_KEY 未設定' })
   }
 
-  const { question } = await readBody(event)
+  const { question, guestExpenses } = await readBody(event)
   if (!question?.trim()) {
     throw createError({ statusCode: 400, message: '缺少查詢問題' })
   }
+
+  const isGuest = Array.isArray(guestExpenses)
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -116,55 +118,49 @@ queryType 規則：
 
   console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, category, nameKeywords: keywords, queryType, title }))
 
-  // Step 2 — 查詢 Supabase
-  const client = await serverSupabaseClient(event)
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
-
-  // Debug: 印出資料庫前5筆的 created_at 原始值
+  // Step 2 — 查詢資料
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: sample } = await (client as any)
-    .from('expenses')
-    .select('id, name, created_at')
-    .order('created_at', { ascending: false })
-    .limit(5)
-  console.log('[query-expenses] 資料庫前5筆 created_at:', sample?.map((r: { name: string; created_at: string }) => ({ name: r.name, created_at: r.created_at })))
+  let items: any[]
 
-  console.log('[query-expenses] 日期過濾條件: .gte("created_at", "' + dateFrom + '") .lt("created_at", "' + dateTo + '")')
-  console.log('[query-expenses] 其他條件:', { category: category ?? '(不過濾)', nameKeywords: keywords.length ? keywords : '(不過濾)' })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (client as any)
-    .from('expenses')
-    .select('id, name, amount, category, created_at')
-    .eq('user_id', user.id)
-    .gte('created_at', dateFrom)
-    .lt('created_at', dateTo)
-
-  if (category) {
-    query = query.eq('category', category)
+  if (isGuest) {
+    // 訪客模式：直接過濾 localStorage 資料
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items = (guestExpenses as any[]).filter((r: { created_at: string; category: string; name: string }) => {
+      const d = r.created_at.slice(0, 10)
+      if (d < dateFrom || d >= dateTo) return false
+      if (category && r.category !== category) return false
+      if (keywords.length > 0 && !keywords.some(k => r.name.toLowerCase().includes(k.toLowerCase()))) return false
+      return true
+    })
   }
+  else {
+    const client = await serverSupabaseClient(event)
+    const { data: { user } } = await client.auth.getUser()
+    if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-  if (keywords.length > 0) {
-    const orFilter = keywords.map(k => `name.ilike.%${k}%`).join(',')
-    query = query.or(orFilter)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query = (client as any)
+      .from('expenses')
+      .select('id, name, amount, category, created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', dateFrom)
+      .lt('created_at', dateTo)
+
+    if (category) query = query.eq('category', category)
+
+    if (keywords.length > 0) {
+      const orFilter = keywords.map(k => `name.ilike.%${k}%`).join(',')
+      query = query.or(orFilter)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('[query-expenses] Supabase 查詢失敗:', error)
+      throw createError({ statusCode: 500, message: error.message })
+    }
+    items = data ?? []
   }
-
-  const { data, error } = await query.order('created_at', { ascending: false })
-
-  console.log('[query-expenses] 查詢結果筆數:', data?.length ?? 0)
-  if (data?.length) {
-    const cats = [...new Set(data.map((r: { category: string }) => r.category))]
-    console.log('[query-expenses] 結果中的 category 值:', cats)
-  }
-
-  if (error) {
-    console.error('[query-expenses] Supabase 查詢失敗:', error)
-    throw createError({ statusCode: 500, message: error.message })
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items: any[] = data ?? []
   const total: number = items.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
 
   // grouped：依 nameKeywords 分組

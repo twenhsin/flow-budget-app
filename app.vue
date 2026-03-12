@@ -1,3 +1,11 @@
+<script setup>
+useHead({
+  script: [
+    { src: 'https://mcp.figma.com/mcp/html-to-design/capture.js', async: true }
+  ]
+})
+</script>
+
 <template>
   <div class="app-shell">
     <NuxtLayout>

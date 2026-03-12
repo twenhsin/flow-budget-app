@@ -19,7 +19,7 @@
         <div class="item-card">
           <div v-for="item in result.items" :key="item.id" class="item-row">
             <div class="item-icon" :style="{ background: catColor(item.category) }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="catPaths(item.category)" />
+              <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
             </div>
             <div class="item-info">
               <span class="item-name">{{ item.name }}</span>
@@ -37,7 +37,7 @@
           <div v-for="r in rankingData" :key="r.cat" class="rank-row">
             <div class="rank-label">
               <div class="item-icon" :style="{ background: catColor(r.cat) }">
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="catPaths(r.cat)" />
+                <CatIcon :category="r.cat" :size="14" :stroke-width="1.8" />
               </div>
               <span class="rank-name">{{ r.cat }}</span>
             </div>
@@ -68,7 +68,7 @@
           <div class="group-divider" />
           <div v-for="item in g.items" :key="item.id" class="item-row">
             <div class="item-icon" :style="{ background: catColor(item.category) }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="catPaths(item.category)" />
+              <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
             </div>
             <div class="item-info">
               <span class="item-name">{{ item.name }}</span>
@@ -256,7 +256,13 @@ const handleSubmit = async () => {
 }
 
 // ── Category colours & icons ───────────────────────────────────────────────────
-import { catColor, catPath as catPaths } from '~/constants/categories'
+import { catColor as catColorBuiltin } from '~/constants/categories'
+const { getCatColor, load: loadCategories } = useUserCategories()
+const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
+
+onMounted(async () => {
+  await loadCategories()
+})
 
 // ── Ranking data ───────────────────────────────────────────────────────────────
 const rankingData = computed(() => {
@@ -425,10 +431,6 @@ const monthlyBars = computed(() => {
   flex-shrink: 0;
 }
 
-.item-icon svg {
-  width: 14px;
-  height: 14px;
-}
 
 .item-info {
   flex: 1;

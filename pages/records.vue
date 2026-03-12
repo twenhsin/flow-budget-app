@@ -41,7 +41,7 @@
           </div>
           <div v-for="(record, i) in group.records" :key="record.id ?? i" class="record-row">
             <div class="cat-icon" :style="{ background: catColor(record.category) }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="catPaths(record.category)" />
+              <CatIcon :category="record.category" :size="18" :stroke-width="1.8" />
             </div>
             <span class="row-name">{{ record.name }}</span>
             <span class="row-amount">-{{ record.amount }}</span>
@@ -113,6 +113,7 @@
 
 <script setup lang="ts">
 import type { BudgetRecord } from '~/types'
+import { getGuestExpenses, addGuestExpense, updateGuestExpense, deleteGuestExpense } from '~/composables/useGuestExpenses'
 
 definePageMeta({ layout: 'default' })
 
@@ -174,6 +175,14 @@ const fetchRecords = async () => {
   const toMonth = month.value === 12 ? 1 : month.value + 1
   const toYear = month.value === 12 ? year.value + 1 : year.value
   const to = `${toYear}-${String(toMonth).padStart(2, '0')}-01`
+
+  if (!user.value) {
+    const all = getGuestExpenses()
+    allRecords.value = all.filter(r => r.created_at >= from && r.created_at < to)
+    isLoading.value = false
+    return
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('expenses')
@@ -189,7 +198,13 @@ const fetchRecords = async () => {
 watch([year, month], fetchRecords, { immediate: true })
 
 // Category icons
-import { catColor, catPath as catPaths } from '~/constants/categories'
+import { catColor as catColorBuiltin } from '~/constants/categories'
+const { getCatColor, load: loadCategories } = useUserCategories()
+const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
+
+onMounted(async () => {
+  await loadCategories()
+})
 
 // Edit
 const editVisible = ref(false)
@@ -204,12 +219,17 @@ const saveEdit = async (record: BudgetRecord) => {
   if (!record.id) return
   editVisible.value = false
   isSaving.value = true
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('expenses').update({
-    name: record.name,
-    amount: record.amount,
-    category: record.category,
-  }).eq('id', record.id)
+  if (!user.value) {
+    updateGuestExpense(record.id, { name: record.name, amount: record.amount, category: record.category })
+  }
+  else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('expenses').update({
+      name: record.name,
+      amount: record.amount,
+      category: record.category,
+    }).eq('id', record.id)
+  }
   isSaving.value = false
   await fetchRecords()
 }
@@ -218,8 +238,13 @@ const deleteRecord = async () => {
   if (!editingRecord.value?.id) return
   editVisible.value = false
   isSaving.value = true
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('expenses').delete().eq('id', editingRecord.value.id)
+  if (!user.value) {
+    deleteGuestExpense(editingRecord.value.id)
+  }
+  else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('expenses').delete().eq('id', editingRecord.value.id)
+  }
   isSaving.value = false
   await fetchRecords()
 }
@@ -229,14 +254,19 @@ const textInput = ref<HTMLInputElement | null>(null)
 
 const saveNewRecord = async (record: BudgetRecord) => {
   isSaving.value = true
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('expenses').insert([{
-    name: record.name,
-    amount: record.amount,
-    category: record.category,
-    input_method: 'text',
-    user_id: user.value?.id,
-  }])
+  if (!user.value) {
+    addGuestExpense({ name: record.name, amount: record.amount, category: record.category, input_method: 'text' })
+  }
+  else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('expenses').insert([{
+      name: record.name,
+      amount: record.amount,
+      category: record.category,
+      input_method: 'text',
+      user_id: user.value?.id,
+    }])
+  }
   isSaving.value = false
   await fetchRecords()
 }
@@ -531,10 +561,6 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   flex-shrink: 0;
 }
 
-.cat-icon svg {
-  width: 18px;
-  height: 18px;
-}
 
 .row-name {
   font-size: 14px;

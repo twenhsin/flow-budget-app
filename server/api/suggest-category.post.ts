@@ -1,3 +1,6 @@
+import morandiColors from '../../constants/morandi-colors.json'
+import { ALL_LUCIDE_ICONS, LUCIDE_ICON_GROUPS } from '../../constants/lucide-icons'
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const apiKey = config.openaiApiKey || process.env.OPENAI_API_KEY || ''
@@ -6,36 +9,24 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'OPENAI_API_KEY 未設定' })
   }
 
-  const { name, usedIcons = [], excludeIcon = '', excludeColors = [], mode = 'single' } = await readBody(event)
+  const { name, usedIcons = [], excludeIcon = '', excludeColors = [], excludeIcons = [], mode = 'single' } = await readBody(event)
   if (!name?.trim()) {
     throw createError({ statusCode: 400, message: '缺少類別名稱' })
   }
 
-  // 內建類別對應的 Lucide icon（避免重複）
+  // ── 顏色池（排除已使用）──────────────────────────────────────────────────────
+  const excluded = new Set((excludeColors as string[]).map(c => c.toUpperCase()))
+  const availableColors = morandiColors.filter(c => !excluded.has(c.hex.toUpperCase()))
+  const colorPool = availableColors.length > 0 ? availableColors : morandiColors
+  const colorListStr = colorPool.map(c => `${c.name} ${c.hex}`).join(', ')
+
+  // ── Icon 池 ───────────────────────────────────────────────────────────────────
   const BUILTIN_ICONS = ['Utensils', 'Coffee', 'Home', 'Bus', 'Wifi']
   const allUsedIcons = [...new Set([...BUILTIN_ICONS, ...(usedIcons as string[])])]
+  const allExcludeIcons = [...new Set([...allUsedIcons, ...(excludeIcons as string[])])]
   const usedIconsStr = `\n注意：以下 icon 已被現有類別使用，請勿選擇：${allUsedIcons.join('、')}`
   const excludeStr = excludeIcon ? `\n特別注意：請勿選擇「${excludeIcon}」，選擇其他最適合的 icon。` : ''
-
-  const ALL_COLORS = ['#C9A69A', '#8FA3B1', '#9CAF96', '#C4B49A', '#B5A8C0', '#D4B8A0', '#A3B5A6', '#B8A5A5']
-  const availableColors = ALL_COLORS.filter(c => !(excludeColors as string[]).includes(c))
-  const colorList = availableColors.length > 0 ? availableColors : ALL_COLORS
-  const colorNames: Record<string, string> = {
-    '#C9A69A': '霧玫瑰', '#8FA3B1': '灰藍', '#9CAF96': '鼠尾草綠',
-    '#C4B49A': '燕麥', '#B5A8C0': '藕紫', '#D4B8A0': '霧杏',
-    '#A3B5A6': '灰綠', '#B8A5A5': '玫瑰灰',
-  }
-  const colorListStr = colorList.map(c => `${colorNames[c]} ${c}`).join(', ')
-
-  const ICON_LIST = `ShoppingBag（購物袋）, ShoppingBasket（生活雜貨日用品）, Coffee（咖啡飲料）, Car（開車交通）,
-Home（居家）, Heart（健康醫療）, Gamepad2（遊戲娛樂）,
-Plane（旅遊出行）, Book（書籍學習）, Music（音樂）,
-Utensils（餐飲吃飯）, Shirt（服飾穿著）, Dumbbell（運動健身）,
-Wifi（網路訂閱）, Gift（禮物）, PawPrint（寵物）,
-Scissors（美容美髮）, Baby（嬰幼兒）, Briefcase（工作商務）,
-Camera（攝影）, Bus（大眾運輸）, Trees（戶外自然）,
-Stethoscope（醫療診所）, GraduationCap（教育學費）, Pizza（外送速食）,
-Sparkles（保養品美妝護膚）`
+  const iconList = ALL_LUCIDE_ICONS.join(', ')
 
   const RULES = `選擇規則：
 - 「旅遊」→ Plane，「健身」→ Dumbbell，「咖啡」→ Coffee
@@ -52,13 +43,30 @@ Sparkles（保養品美妝護膚）`
   let promptContent: string
   let maxTokens: number
 
-  if (mode === 'multiple') {
+  if (mode === 'pick') {
+    // 根據類別名稱選出最相關群組，回傳群組 icon 清單（至少 12 個）
+    const groupsJson = JSON.stringify(LUCIDE_ICON_GROUPS)
+    const excludeIconsStr = allExcludeIcons.length > 0
+      ? `\n排除已使用的 icon，不要出現在結果中：${allExcludeIcons.join('、')}`
+      : ''
+    promptContent = `使用者的記帳類別名稱：「${name}」
+
+以下是 icon 群組（群組名稱 → icon 陣列）：
+${groupsJson}
+
+請判斷「${name}」最適合哪 1-2 個群組，從最相關的群組取出 icon 排在最前面，若不足 12 個則從第二相關群組補足，最終回傳至少 12 個 icon（若有更多也可回傳）。${excludeIconsStr}
+
+只回傳 JSON，不要其他文字：
+{"groups": ["最相關群組名", "次相關群組名"], "icons": ["Icon1", "Icon2", ...]}`
+    maxTokens = 300
+  }
+  else if (mode === 'multiple') {
     promptContent = `使用者新增了一個記帳類別：「${name}」
 
 ${RULES}
 
 請從以下 Lucide icon 中，推薦 6 個最適合「${name}」的 icon，從最相關到較相關排序：
-${ICON_LIST}${usedIconsStr}
+${iconList}${usedIconsStr}
 
 只回傳 JSON，不要其他文字：
 {"icons": ["Icon1", "Icon2", "Icon3", "Icon4", "Icon5", "Icon6"]}`
@@ -70,7 +78,7 @@ ${ICON_LIST}${usedIconsStr}
 ${RULES}
 
 請從以下 Lucide icon 名稱中選出最適合的一個：
-${ICON_LIST}${usedIconsStr}${excludeStr}
+${iconList}${usedIconsStr}${excludeStr}
 
 請從以下色票中選出最適合的一個（排除已被使用的顏色）：
 ${colorListStr}
@@ -125,13 +133,32 @@ ${colorListStr}
     catch { throw createError({ statusCode: 502, message: '無法解析 GPT JSON' }) }
   }
 
-  if (mode === 'multiple') {
-    const icons = Array.isArray(parsed.icons) ? parsed.icons.slice(0, 6) : ['ShoppingBag', 'Heart', 'Gift', 'Star', 'Briefcase', 'Scissors']
-    return { icons }
+  // Whitelist — only return names that exist in ALL_LUCIDE_ICONS to prevent
+  // AI from returning group names (e.g. "社交類") instead of icon names.
+  const VALID_ICONS = new Set(ALL_LUCIDE_ICONS)
+  const filterIcons = (arr: unknown[]): string[] =>
+    arr.filter((n): n is string => typeof n === 'string' && VALID_ICONS.has(n))
+
+  if (mode === 'pick') {
+    const groups = Array.isArray(parsed.groups) ? parsed.groups : []
+    const raw = Array.isArray(parsed.icons) ? parsed.icons : []
+    const icons = filterIcons(raw).length > 0
+      ? filterIcons(raw)
+      : ['ShoppingBag', 'Heart', 'Gift', 'Briefcase', 'Scissors', 'Camera', 'Music', 'Book', 'Plane', 'Dumbbell', 'PawPrint', 'GraduationCap']
+    return { groups, icons }
   }
 
+  if (mode === 'multiple') {
+    const raw = Array.isArray(parsed.icons) ? parsed.icons : []
+    const icons = filterIcons(raw).slice(0, 6)
+    return { icons: icons.length > 0 ? icons : ['ShoppingBag', 'Heart', 'Gift', 'Star', 'Briefcase', 'Scissors'] }
+  }
+
+  const icon = typeof parsed.icon === 'string' && VALID_ICONS.has(parsed.icon)
+    ? parsed.icon
+    : 'ShoppingBag'
   return {
-    icon: parsed.icon ?? 'ShoppingBag',
+    icon,
     color: parsed.color ?? '#C4B49A',
   }
 })

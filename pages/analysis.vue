@@ -60,7 +60,7 @@
               </div>
               <div v-for="cat in categoryData" :key="cat.cat" class="cat-row">
                 <div class="cat-icon" :style="{ background: catColor(cat.cat) }">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="catPaths(cat.cat)" />
+                  <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
                 </div>
                 <span class="cat-name">{{ cat.cat }} <span class="cat-pct">{{ cat.pct }}%</span></span>
                 <span class="cat-amount">-{{ formatAmount(cat.amount) }}</span>
@@ -141,6 +141,8 @@
 </template>
 
 <script setup lang="ts">
+import { getGuestExpenses } from '~/composables/useGuestExpenses'
+
 definePageMeta({ layout: 'default' })
 
 const supabase = useSupabaseClient()
@@ -269,6 +271,14 @@ const isLoading = ref(false)
 const fetchData = async () => {
   isLoading.value = true
   const { from, to } = dateRange.value
+
+  if (!user.value) {
+    const all = getGuestExpenses()
+    expenses.value = all.filter(r => r.created_at >= from && r.created_at < to)
+    isLoading.value = false
+    return
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('expenses')
@@ -390,7 +400,13 @@ function formatYLabel(n: number) {
 }
 
 // ── Category colours & icons ────────────────────────────────────────────────────
-import { catColor, catPath as catPaths } from '~/constants/categories'
+import { catColor as catColorBuiltin } from '~/constants/categories'
+const { getCatColor, load: loadCategories } = useUserCategories()
+const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
+
+onMounted(async () => {
+  await loadCategories()
+})
 </script>
 
 <style scoped>
@@ -671,10 +687,6 @@ import { catColor, catPath as catPaths } from '~/constants/categories'
   flex-shrink: 0;
 }
 
-.cat-icon svg {
-  width: 14px;
-  height: 14px;
-}
 
 .cat-name {
   font-size: 14px;

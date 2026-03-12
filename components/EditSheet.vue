@@ -24,30 +24,42 @@
             </svg>
           </button>
 
-          <Transition name="dropdown">
-            <div v-if="dropdownOpen" class="category-panel">
-              <ul class="category-list">
-                <li class="cat-add-item" @click="openAddModal">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  新增類別
-                </li>
-                <li
-                  v-for="cat in allCategoryItems"
-                  :key="cat.name"
-                  :class="{ selected: form.category === cat.name }"
-                  @click="selectCategory(cat.name)"
+          <div v-if="dropdownOpen" class="category-panel">
+            <ul class="category-list">
+              <li class="cat-add-item" @click="openAddModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                新增類別
+              </li>
+              <li
+                v-for="cat in allCategoryItems"
+                :key="cat.name"
+                :class="{ selected: form.category === cat.name }"
+                @click="selectCategory(cat.name)"
+              >
+                <span class="cat-icon-wrap" :style="{ background: cat.color }">
+                  <component
+                    v-if="cat.isUser"
+                    :is="lucideIcon(cat.icon)"
+                    :size="14"
+                    color="white"
+                    :stroke-width="1.8"
+                  />
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="cat.path" />
+                </span>
+                <span class="cat-name-text">{{ cat.name }}</span>
+                <button
+                  v-if="cat.isUser"
+                  class="cat-edit-btn"
+                  @click.stop="openEditCatModal({ name: cat.name, color: cat.color, icon: cat.icon })"
                 >
-                  <span class="cat-icon-wrap" :style="{ background: cat.color }">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" v-html="cat.path" />
-                  </span>
-                  {{ cat.name }}
-                </li>
-              </ul>
-            </div>
-          </Transition>
+                  <component :is="(LucideIcons as any).Pencil" :size="14" :stroke-width="1.8" />
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="edit-field">
           <label>項目名稱</label>
@@ -63,78 +75,142 @@
           <button class="edit-save-btn" @click="save">儲存</button>
         </div>
 
-        <!-- Add Category Modal (inside sheet so it inherits width) -->
+        <!-- Add Category Modal -->
         <Transition name="modal">
           <div v-if="addModalOpen" class="add-modal-overlay" @click.self="closeAddModal">
             <div class="add-modal">
-            <div class="add-modal-title">新增類別</div>
+              <div class="add-modal-title">新增類別</div>
 
-            <!-- Step 1: input name -->
-            <template v-if="addStep === 'input'">
-              <input
-                ref="addCatInput"
-                v-model="addCatName"
-                class="add-cat-input"
-                type="text"
-                placeholder="輸入類別名稱"
-                @keydown.enter.prevent="suggestCategory"
-              >
-              <div class="add-modal-actions">
-                <button class="add-modal-cancel" @click="closeAddModal">取消</button>
-                <button class="add-modal-confirm" :disabled="!addCatName.trim()" @click="suggestCategory">
-                  AI 配置
+              <!-- Step 1: input name -->
+              <template v-if="addStep === 'input'">
+                <input
+                  ref="addCatInput"
+                  v-model="addCatName"
+                  class="add-cat-input"
+                  type="text"
+                  placeholder="輸入類別名稱"
+                  @keydown.enter.prevent="suggestCategory"
+                >
+                <div class="add-modal-actions">
+                  <button class="add-modal-cancel" @click="closeAddModal">取消</button>
+                  <button class="add-modal-confirm" :disabled="!addCatName.trim()" @click="suggestCategory">
+                    AI 配置
+                  </button>
+                </div>
+              </template>
+
+              <!-- Step 2: loading -->
+              <template v-else-if="addStep === 'loading'">
+                <div class="add-loading">
+                  <div class="add-spinner" />
+                  <span>AI 配置中...</span>
+                </div>
+              </template>
+
+              <!-- Step 3: preview -->
+              <template v-else-if="addStep === 'preview' && suggestion">
+                <div class="add-preview">
+                  <div class="preview-icon" :style="{ background: suggestion.color }">
+                    <component :is="lucideIcon(suggestion.icon)" :size="18" color="white" :stroke-width="1.8" />
+                  </div>
+                  <span class="preview-name">{{ addCatName }}</span>
+                </div>
+                <div class="preview-actions">
+                  <button class="preview-action-btn" @click="rerollSuggestion">換一個</button>
+                  <button class="preview-action-btn" @click="fetchPickerIcons">自己選</button>
+                </div>
+                <div class="add-modal-actions">
+                  <button class="add-modal-cancel" @click="addStep = 'input'">重新輸入</button>
+                  <button class="add-modal-confirm" @click="confirmAddCategory">確認新增</button>
+                </div>
+              </template>
+
+              <!-- Step 4: icon picker -->
+              <template v-else-if="addStep === 'picker'">
+                <div v-if="pickerLoading" class="add-loading">
+                  <div class="add-spinner" />
+                  <span>AI 推薦中...</span>
+                </div>
+                <div v-else class="icon-picker-scroll">
+                  <div class="icon-picker-grid">
+                    <button
+                      v-for="iconName in pickerIcons"
+                      :key="iconName"
+                      class="icon-picker-btn"
+                      :class="{ selected: suggestion?.icon === iconName }"
+                      :style="{ background: suggestion?.color }"
+                      @click="pickIcon(iconName)"
+                    >
+                      <component :is="lucideIcon(iconName)" :size="20" color="white" :stroke-width="1.8" />
+                    </button>
+                  </div>
+                </div>
+                <div class="add-modal-actions" style="margin-top: 16px">
+                  <button class="add-modal-cancel" @click="addStep = 'preview'">返回</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </Transition>
+
+        <!-- Edit Category Modal -->
+        <Transition name="modal">
+          <div v-if="editCatModalOpen" class="add-modal-overlay" @click.self="editCatModalOpen = false">
+            <div class="add-modal">
+              <!-- Header -->
+              <div class="edit-cat-header">
+                <div class="add-modal-title" style="margin-bottom: 0">編輯類別</div>
+                <button class="edit-cat-delete-btn" @click="deleteEditCat">
+                  <component :is="(LucideIcons as any).Trash2" :size="18" :stroke-width="1.8" />
                 </button>
               </div>
-            </template>
 
-            <!-- Step 2: loading -->
-            <template v-else-if="addStep === 'loading'">
-              <div class="add-loading">
+              <!-- Loading -->
+              <div v-if="editCatStep === 'loading'" class="add-loading">
                 <div class="add-spinner" />
                 <span>AI 配置中...</span>
               </div>
-            </template>
 
-            <!-- Step 3: preview -->
-            <template v-else-if="addStep === 'preview' && suggestion">
-              <div class="add-preview">
-                <div class="preview-icon" :style="{ background: suggestion.color }">
-                  <component :is="lucideIcon(suggestion.icon)" :size="18" color="white" :stroke-width="1.8" />
+              <!-- Preview -->
+              <template v-else-if="editCatStep === 'preview' && editCatSuggestion">
+                <div class="edit-cat-preview-row">
+                  <div class="preview-icon edit-cat-icon" :style="{ background: editCatSuggestion.color }">
+                    <component :is="lucideIcon(editCatSuggestion.icon)" :size="22" color="white" :stroke-width="1.8" />
+                  </div>
+                  <button class="preview-action-btn" @click="editCatReroll">換一個</button>
+                  <button class="preview-action-btn" @click="editCatFetchPicker">自己選</button>
                 </div>
-                <span class="preview-name">{{ addCatName }}</span>
-              </div>
-              <div class="preview-actions">
-                <button class="preview-action-btn" @click="rerollSuggestion">換一個</button>
-                <button class="preview-action-btn" @click="fetchPickerIcons">自己選</button>
-              </div>
-              <div class="add-modal-actions">
-                <button class="add-modal-cancel" @click="addStep = 'input'">重新輸入</button>
-                <button class="add-modal-confirm" @click="confirmAddCategory">確認新增</button>
-              </div>
-            </template>
+                <input v-model="editCatName" class="add-cat-input" type="text" placeholder="類別名稱">
+                <div class="add-modal-actions">
+                  <button class="add-modal-cancel" @click="editCatModalOpen = false">取消</button>
+                  <button class="add-modal-confirm" :disabled="!editCatName.trim()" @click="confirmEditCat">儲存</button>
+                </div>
+              </template>
 
-            <!-- Step 4: icon picker -->
-            <template v-else-if="addStep === 'picker'">
-              <div v-if="pickerLoading" class="add-loading">
-                <div class="add-spinner" />
-                <span>AI 推薦中...</span>
-              </div>
-              <div v-else class="icon-picker-grid">
-                <button
-                  v-for="iconName in pickerIcons"
-                  :key="iconName"
-                  class="icon-picker-btn"
-                  :class="{ selected: suggestion?.icon === iconName }"
-                  :style="{ background: suggestion?.color }"
-                  @click="pickIcon(iconName)"
-                >
-                  <component :is="lucideIcon(iconName)" :size="22" color="white" :stroke-width="1.8" />
-                </button>
-              </div>
-              <div class="add-modal-actions" style="margin-top: 16px">
-                <button class="add-modal-cancel" @click="addStep = 'preview'">返回</button>
-              </div>
-            </template>
+              <!-- Icon Picker -->
+              <template v-else-if="editCatStep === 'picker'">
+                <div v-if="editCatPickerLoading" class="add-loading">
+                  <div class="add-spinner" />
+                  <span>AI 推薦中...</span>
+                </div>
+                <div v-else class="icon-picker-scroll">
+                  <div class="icon-picker-grid">
+                    <button
+                      v-for="iconName in editCatPickerIcons"
+                      :key="iconName"
+                      class="icon-picker-btn"
+                      :class="{ selected: editCatSuggestion?.icon === iconName }"
+                      :style="{ background: editCatSuggestion?.color }"
+                      @click="editCatPickIcon(iconName)"
+                    >
+                      <component :is="lucideIcon(iconName)" :size="20" color="white" :stroke-width="1.8" />
+                    </button>
+                  </div>
+                </div>
+                <div class="add-modal-actions" style="margin-top: 16px">
+                  <button class="add-modal-cancel" @click="editCatStep = 'preview'">返回</button>
+                </div>
+              </template>
             </div>
           </div>
         </Transition>
@@ -148,7 +224,7 @@
 
 <script setup lang="ts">
 import * as LucideIcons from 'lucide-vue-next'
-import { CATEGORIES, LUCIDE_PATHS, getUserCategories, saveUserCategory } from '~/constants/categories'
+import { CATEGORIES, LUCIDE_PATHS, getUserCategories, saveUserCategory, updateUserCategory, deleteUserCategory } from '~/constants/categories'
 import type { UserCategory } from '~/constants/categories'
 import type { BudgetRecord } from '~/types'
 
@@ -163,6 +239,9 @@ const emit = defineEmits<{
   save: [record: BudgetRecord]
   delete: []
 }>()
+
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 
 const form = reactive<BudgetRecord>({
   name: '',
@@ -179,10 +258,10 @@ const loadUserCats = () => { userCats.value = getUserCategories() }
 const DEFAULT_PATH = '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>'
 
 const allCategoryItems = computed(() => [
-  ...CATEGORIES.map(c => ({ name: c.name, color: c.color, path: c.path })),
+  ...CATEGORIES.map(c => ({ name: c.name, color: c.color, path: c.path, isUser: false as const, icon: '' })),
   ...userCats.value
     .filter(u => !CATEGORIES.find(c => c.name === u.name))
-    .map(u => ({ name: u.name, color: u.color, path: LUCIDE_PATHS[u.icon] ?? DEFAULT_PATH })),
+    .map(u => ({ name: u.name, color: u.color, path: LUCIDE_PATHS[u.icon] ?? DEFAULT_PATH, isUser: true as const, icon: u.icon })),
 ])
 
 const dropdownOpen = ref(false)
@@ -211,6 +290,7 @@ const pickerLoading = ref(false)
 
 const openAddModal = () => {
   dropdownOpen.value = false
+  loadUserCats()
   addCatName.value = ''
   addStep.value = 'input'
   suggestion.value = null
@@ -252,14 +332,14 @@ const fetchPickerIcons = async () => {
   pickerLoading.value = true
   try {
     const usedIcons = userCats.value.map(c => c.icon)
-    const data = await $fetch<{ icons: string[] }>('/api/suggest-category', {
+    const data = await $fetch<{ groups: string[]; icons: string[] }>('/api/suggest-category', {
       method: 'POST',
-      body: { name: addCatName.value.trim(), usedIcons, mode: 'multiple' },
+      body: { name: addCatName.value.trim(), excludeIcons: usedIcons, mode: 'pick' },
     })
     pickerIcons.value = data.icons ?? []
   }
   catch {
-    pickerIcons.value = ['ShoppingBag', 'Heart', 'Gift', 'Briefcase', 'Scissors', 'Camera']
+    pickerIcons.value = ['ShoppingBag', 'Heart', 'Gift', 'Briefcase', 'Scissors', 'Camera', 'Music', 'Book', 'Plane', 'Dumbbell', 'PawPrint', 'GraduationCap']
   }
   pickerLoading.value = false
 }
@@ -300,6 +380,134 @@ const confirmAddCategory = () => {
   loadUserCats()
   form.category = cat.name
   addModalOpen.value = false
+}
+
+// ── Edit Category Modal ────────────────────────────────────────────────────────
+
+type EditCatStep = 'preview' | 'loading' | 'picker'
+
+const editCatModalOpen = ref(false)
+const editingCat = ref<UserCategory | null>(null)
+const editCatName = ref('')
+const editCatSuggestion = ref<{ icon: string; color: string } | null>(null)
+const editCatStep = ref<EditCatStep>('preview')
+const editCatPickerIcons = ref<string[]>([])
+const editCatPickerLoading = ref(false)
+
+const openEditCatModal = (cat: UserCategory) => {
+  dropdownOpen.value = false
+  editingCat.value = cat
+  editCatName.value = cat.name
+  editCatSuggestion.value = { icon: cat.icon, color: cat.color }
+  editCatStep.value = 'preview'
+  editCatPickerIcons.value = []
+  editCatModalOpen.value = true
+}
+
+const editCatReroll = async () => {
+  if (!editCatSuggestion.value) return
+  const excludeIcon = editCatSuggestion.value.icon
+  editCatStep.value = 'loading'
+  try {
+    const usedIcons = userCats.value.filter(c => c.name !== editingCat.value?.name).map(c => c.icon)
+    const excludeColors = getUsedColors().filter(c => c !== editingCat.value?.color)
+    const data = await $fetch<{ icon: string; color: string }>('/api/suggest-category', {
+      method: 'POST',
+      body: { name: editCatName.value.trim() || editingCat.value?.name, usedIcons, excludeIcon, excludeColors },
+    })
+    editCatSuggestion.value = data
+    editCatStep.value = 'preview'
+  }
+  catch {
+    editCatStep.value = 'preview'
+  }
+}
+
+const editCatFetchPicker = async () => {
+  editCatStep.value = 'picker'
+  editCatPickerLoading.value = true
+  try {
+    const usedIcons = userCats.value.filter(c => c.name !== editingCat.value?.name).map(c => c.icon)
+    const data = await $fetch<{ groups: string[]; icons: string[] }>('/api/suggest-category', {
+      method: 'POST',
+      body: { name: editCatName.value.trim() || editingCat.value?.name, excludeIcons: usedIcons, mode: 'pick' },
+    })
+    editCatPickerIcons.value = data.icons ?? []
+  }
+  catch {
+    editCatPickerIcons.value = ['ShoppingBag', 'Heart', 'Gift', 'Briefcase', 'Scissors', 'Camera', 'Music', 'Book', 'Plane', 'Dumbbell', 'PawPrint', 'GraduationCap']
+  }
+  editCatPickerLoading.value = false
+}
+
+const editCatPickIcon = (iconName: string) => {
+  if (!editCatSuggestion.value) return
+  editCatSuggestion.value = { ...editCatSuggestion.value, icon: iconName }
+  editCatStep.value = 'preview'
+}
+
+const confirmEditCat = async () => {
+  if (!editingCat.value || !editCatSuggestion.value) return
+  const oldName = editingCat.value.name
+  const newName = editCatName.value.trim()
+  if (!newName) return
+
+  const updated: UserCategory = { name: newName, color: editCatSuggestion.value.color, icon: editCatSuggestion.value.icon }
+  updateUserCategory(oldName, updated)
+
+  if (oldName !== newName) {
+    if (user.value) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('expenses')
+        .update({ category: newName })
+        .eq('user_id', user.value.id)
+        .eq('category', oldName)
+    }
+    else {
+      try {
+        const KEY = 'guest_expenses'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const all: any[] = JSON.parse(localStorage.getItem(KEY) || '[]')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        localStorage.setItem(KEY, JSON.stringify(all.map((r: any) => r.category === oldName ? { ...r, category: newName } : r)))
+      }
+      catch {}
+    }
+  }
+
+  if (form.category === oldName) form.category = newName
+  loadUserCats()
+  editCatModalOpen.value = false
+}
+
+const deleteEditCat = async () => {
+  if (!editingCat.value) return
+  if (!window.confirm(`確定刪除「${editingCat.value.name}」類別？此操作無法復原。`)) return
+
+  const catName = editingCat.value.name
+  deleteUserCategory(catName)
+
+  if (user.value) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('expenses')
+      .update({ category: '其他' })
+      .eq('user_id', user.value.id)
+      .eq('category', catName)
+  }
+  else {
+    try {
+      const KEY = 'guest_expenses'
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const all: any[] = JSON.parse(localStorage.getItem(KEY) || '[]')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      localStorage.setItem(KEY, JSON.stringify(all.map((r: any) => r.category === catName ? { ...r, category: '其他' } : r)))
+    }
+    catch {}
+  }
+
+  if (form.category === catName) form.category = '其他'
+  loadUserCats()
+  editCatModalOpen.value = false
 }
 
 // ── Lucide icon resolver ───────────────────────────────────────────────────────
@@ -492,6 +700,11 @@ h3 {
   font-weight: 400;
 }
 
+.cat-name-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .cat-icon-wrap {
   width: 28px;
   height: 28px;
@@ -505,6 +718,25 @@ h3 {
 .cat-icon-wrap svg {
   width: 14px;
   height: 14px;
+}
+
+.cat-edit-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.cat-edit-btn:active {
+  background: rgba(224, 122, 79, 0.1);
 }
 
 .cat-add-item {
@@ -525,18 +757,7 @@ h3 {
   z-index: 199;
 }
 
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: opacity 0.15s, transform 0.15s;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-/* ── Add Category Modal ── */
+/* ── Add / Edit Category Modal ── */
 
 .add-modal-overlay {
   position: fixed;
@@ -671,15 +892,64 @@ h3 {
   background: rgba(224, 122, 79, 0.08);
 }
 
+/* ── Edit Category Modal specific ── */
+
+.edit-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.edit-cat-delete-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #E05252;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.edit-cat-delete-btn:active {
+  color: #C03030;
+}
+
+.edit-cat-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.edit-cat-icon {
+  flex-shrink: 0;
+}
+
+/* ── Icon Picker ── */
+
+.icon-picker-scroll {
+  height: calc(4 * 48px + 3 * 8px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 4px 0;
+}
+
 .icon-picker-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 4px 0;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  padding: 2px 0;
 }
 
 .icon-picker-btn {
-  aspect-ratio: 1;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 2.5px solid transparent;
   display: flex;
@@ -687,6 +957,7 @@ h3 {
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .icon-picker-btn:active {

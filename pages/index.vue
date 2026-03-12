@@ -61,9 +61,11 @@
 
 <script setup lang="ts">
 import type { HomeTab } from '~/types'
+import { getGuestExpenses } from '~/composables/useGuestExpenses'
 
 definePageMeta({ layout: 'default' })
 
+const user = useSupabaseUser()
 const { clearRecords, addRecord, parseTextEntryAI } = useRecords()
 
 // Tabs
@@ -123,9 +125,11 @@ const handleSubmit = async () => {
   isQuerying.value = true
   queryError.value = ''
   try {
+    const body: Record<string, unknown> = { question: val }
+    if (!user.value) body.guestExpenses = getGuestExpenses()
     const data = await $fetch<QueryResult>('/api/query-expenses', {
       method: 'POST',
-      body: { question: val },
+      body,
     })
     queryResult.value = data
     navigateTo('/query-result')

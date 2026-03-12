@@ -109,7 +109,25 @@ export function saveUserCategory(cat: UserCategory) {
   localStorage.setItem(USER_CATEGORIES_KEY, JSON.stringify(existing))
 }
 
+export function updateUserCategory(oldName: string, cat: UserCategory) {
+  const existing = getUserCategories()
+  const idx = existing.findIndex(c => c.name === oldName)
+  if (idx !== -1) existing[idx] = cat
+  localStorage.setItem(USER_CATEGORIES_KEY, JSON.stringify(existing))
+}
+
+export function deleteUserCategory(name: string) {
+  const existing = getUserCategories().filter(c => c.name !== name)
+  localStorage.setItem(USER_CATEGORIES_KEY, JSON.stringify(existing))
+}
+
 // ── Lookup helpers (user categories take priority) ─────────────────────────────
+
+/** 若為用戶自訂類別，回傳 Lucide icon 名稱；內建類別回傳 null（用 SVG path 渲染） */
+export function catLucideIcon(name: string): string | null {
+  const user = getUserCategories().find(c => c.name === name)
+  return user ? user.icon : null
+}
 
 const builtinColorMap = Object.fromEntries(CATEGORIES.map(c => [c.name, c.color]))
 const builtinPathMap = Object.fromEntries(CATEGORIES.map(c => [c.name, c.path]))
