@@ -224,7 +224,7 @@
 
 <script setup lang="ts">
 import * as LucideIcons from 'lucide-vue-next'
-import { CATEGORIES, LUCIDE_PATHS, getUserCategories, saveUserCategory, updateUserCategory, deleteUserCategory } from '~/constants/categories'
+import { CATEGORIES, LUCIDE_PATHS } from '~/constants/categories'
 import type { UserCategory } from '~/constants/categories'
 import type { BudgetRecord } from '~/types'
 
@@ -242,6 +242,11 @@ const emit = defineEmits<{
 
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
+const { categories, load, saveCat, updateCat, deleteCat } = useUserCategories()
+
+onMounted(async () => {
+  await load()
+})
 
 const form = reactive<BudgetRecord>({
   name: '',
@@ -251,15 +256,11 @@ const form = reactive<BudgetRecord>({
 
 // ── Category list ──────────────────────────────────────────────────────────────
 
-const userCats = ref<UserCategory[]>([])
-
-const loadUserCats = () => { userCats.value = getUserCategories() }
-
 const DEFAULT_PATH = '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>'
 
 const allCategoryItems = computed(() => [
   ...CATEGORIES.map(c => ({ name: c.name, color: c.color, path: c.path, isUser: false as const, icon: '' })),
-  ...userCats.value
+  ...categories.value
     .filter(u => !CATEGORIES.find(c => c.name === u.name))
     .map(u => ({ name: u.name, color: u.color, path: LUCIDE_PATHS[u.icon] ?? DEFAULT_PATH, isUser: true as const, icon: u.icon })),
 ])
@@ -267,7 +268,6 @@ const allCategoryItems = computed(() => [
 const dropdownOpen = ref(false)
 
 const toggleDropdown = () => {
-  loadUserCats()
   dropdownOpen.value = !dropdownOpen.value
 }
 
@@ -290,7 +290,6 @@ const pickerLoading = ref(false)
 
 const openAddModal = () => {
   dropdownOpen.value = false
-  loadUserCats()
   addCatName.value = ''
   addStep.value = 'input'
   suggestion.value = null
@@ -305,14 +304,14 @@ const closeAddModal = () => {
 
 const getUsedColors = () => [
   ...CATEGORIES.map(c => c.color),
-  ...userCats.value.map(c => c.color),
+  ...categories.value.map(c => c.color),
 ]
 
 const suggestCategory = async () => {
   if (!addCatName.value.trim()) return
   addStep.value = 'loading'
   try {
-    const usedIcons = userCats.value.map(c => c.icon)
+    const usedIcons = categories.value.map(c => c.icon)
     const excludeColors = getUsedColors()
     const data = await $fetch<{ icon: string; color: string }>('/api/suggest-category', {
       method: 'POST',
@@ -331,7 +330,7 @@ const fetchPickerIcons = async () => {
   addStep.value = 'picker'
   pickerLoading.value = true
   try {
-    const usedIcons = userCats.value.map(c => c.icon)
+    const usedIcons = categories.value.map(c => c.icon)
     const data = await $fetch<{ groups: string[]; icons: string[] }>('/api/suggest-category', {
       method: 'POST',
       body: { name: addCatName.value.trim(), excludeIcons: usedIcons, mode: 'pick' },
@@ -349,7 +348,7 @@ const rerollSuggestion = async () => {
   const excludeIcon = suggestion.value.icon
   addStep.value = 'loading'
   try {
-    const usedIcons = userCats.value.map(c => c.icon)
+    const usedIcons = categories.value.map(c => c.icon)
     const excludeColors = getUsedColors()
     const data = await $fetch<{ icon: string; color: string }>('/api/suggest-category', {
       method: 'POST',
@@ -369,15 +368,14 @@ const pickIcon = (iconName: string) => {
   addStep.value = 'preview'
 }
 
-const confirmAddCategory = () => {
+const confirmAddCategory = async () => {
   if (!suggestion.value) return
   const cat: UserCategory = {
     name: addCatName.value.trim(),
     color: suggestion.value.color,
     icon: suggestion.value.icon,
   }
-  saveUserCategory(cat)
-  loadUserCats()
+  await saveCat(cat)
   form.category = cat.name
   addModalOpen.value = false
 }
@@ -409,7 +407,7 @@ const editCatReroll = async () => {
   const excludeIcon = editCatSuggestion.value.icon
   editCatStep.value = 'loading'
   try {
-    const usedIcons = userCats.value.filter(c => c.name !== editingCat.value?.name).map(c => c.icon)
+    const usedIcons = categories.value.filter(c => c.name !== editingCat.value?.name).map(c => c.icon)
     const excludeColors = getUsedColors().filter(c => c !== editingCat.value?.color)
     const data = await $fetch<{ icon: string; color: string }>('/api/suggest-category', {
       method: 'POST',
@@ -427,7 +425,7 @@ const editCatFetchPicker = async () => {
   editCatStep.value = 'picker'
   editCatPickerLoading.value = true
   try {
-    const usedIcons = userCats.value.filter(c => c.name !== editingCat.value?.name).map(c => c.icon)
+    const usedIcons = categories.value.filter(c => c.name !== editingCat.value?.name).map(c => c.icon)
     const data = await $fetch<{ groups: string[]; icons: string[] }>('/api/suggest-category', {
       method: 'POST',
       body: { name: editCatName.value.trim() || editingCat.value?.name, excludeIcons: usedIcons, mode: 'pick' },
@@ -453,7 +451,7 @@ const confirmEditCat = async () => {
   if (!newName) return
 
   const updated: UserCategory = { name: newName, color: editCatSuggestion.value.color, icon: editCatSuggestion.value.icon }
-  updateUserCategory(oldName, updated)
+  await updateCat(oldName, updated)
 
   if (oldName !== newName) {
     if (user.value) {
@@ -476,7 +474,6 @@ const confirmEditCat = async () => {
   }
 
   if (form.category === oldName) form.category = newName
-  loadUserCats()
   editCatModalOpen.value = false
 }
 
@@ -485,7 +482,7 @@ const deleteEditCat = async () => {
   if (!window.confirm(`確定刪除「${editingCat.value.name}」類別？此操作無法復原。`)) return
 
   const catName = editingCat.value.name
-  deleteUserCategory(catName)
+  await deleteCat(catName)
 
   if (user.value) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -506,7 +503,6 @@ const deleteEditCat = async () => {
   }
 
   if (form.category === catName) form.category = '其他'
-  loadUserCats()
   editCatModalOpen.value = false
 }
 
@@ -524,11 +520,6 @@ watch(
   () => props.record,
   (r) => { if (r) Object.assign(form, r) },
   { immediate: true },
-)
-
-watch(
-  () => props.visible,
-  (v) => { if (v) loadUserCats() },
 )
 
 const save = () => emit('save', { ...form })

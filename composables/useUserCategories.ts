@@ -42,14 +42,15 @@ export function useUserCategories() {
 
     if (user.value) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('categories')
           .select('name, color, icon')
           .eq('user_id', user.value.id)
-          .order('sort_order', { ascending: true })
-        if (Array.isArray(data)) {
+        if (error) throw error
+        if (Array.isArray(data) && data.length > 0) {
           categories.value = data as UserCategory[]
         }
+        console.log('loaded categories:', categories.value)
       }
       catch {
         // categories 表尚未建立時 fallback 到 localStorage
@@ -123,13 +124,18 @@ export function useUserCategories() {
   /** 新增類別：已登入寫 Supabase，訪客寫 localStorage */
   const saveCat = async (cat: UserCategory) => {
     if (user.value) {
-      await supabase
+      const { error } = await supabase
         .from('categories')
         .insert({ user_id: user.value.id, name: cat.name, color: cat.color, icon: cat.icon })
+      if (error) {
+        console.error('saveCat error:', error)
+        return
+      }
     }
     else {
       saveLocalCategory(cat)
     }
+    console.log('saveCat pushing:', JSON.stringify(cat))
     if (!categories.value.find(c => c.name === cat.name)) {
       categories.value = [...categories.value, cat]
     }
