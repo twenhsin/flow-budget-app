@@ -16,6 +16,22 @@
       <div class="qr-header">
         <div class="qr-title" v-html="result.title" />
         <div class="qr-sub">{{ formattedRange }}</div>
+        <template v-if="result.queryType === 'top_n'">
+          <div v-if="result.topItems?.length" class="topn-summary-line">
+            前{{ nToChinese(result.n) }}筆最高消費：<span
+              v-for="item in result.topItems"
+              :key="item.id"
+              class="topn-summary-kw"
+            >{{ item.name }}</span>
+          </div>
+          <div v-if="result.topCategories?.length" class="topn-summary-line">
+            前{{ nToChinese(result.n) }}高消費分類：<span
+              v-for="cat in result.topCategories"
+              :key="cat.cat"
+              class="topn-summary-kw"
+            >{{ cat.cat }}</span>
+          </div>
+        </template>
       </div>
 
       <!-- Total -->
@@ -92,6 +108,7 @@
       <template v-else-if="result.queryType === 'top_n'">
         <div class="item-card">
           <div class="topn-section-title">消費項目</div>
+          <div class="topn-title-divider" />
           <div v-for="item in result.topItems" :key="item.id" class="topn-item-row">
             <div class="item-icon" :style="{ background: catColor(item.category) }">
               <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
@@ -107,12 +124,13 @@
         </div>
         <div v-if="showTopCatSection" class="item-card topn-cat-card">
           <div class="topn-section-title">分類項目</div>
+          <div class="topn-title-divider" />
           <div v-for="cat in result.topCategories" :key="cat.cat" class="topn-cat-row">
             <div class="item-icon" :style="{ background: catColor(cat.cat) }">
               <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
             </div>
             <span class="rank-name">{{ cat.cat }}</span>
-            <span class="item-amount">{{ formatAmount(cat.total) }}</span>
+            <span class="topn-cat-amount">{{ formatAmount(cat.total) }}</span>
           </div>
         </div>
       </template>
@@ -272,6 +290,11 @@ function formatDate(d: string) {
 function formatDateShort(d: string) {
   const date = new Date(d)
   return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+function nToChinese(n: number | undefined): string {
+  const map: Record<number, string> = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八', 9: '九', 10: '十' }
+  return map[n ?? 3] ?? String(n ?? 3)
 }
 
 const formattedRange = computed(() =>
@@ -696,17 +719,36 @@ const monthlyBars = computed(() => {
   color: var(--text-soft);
 }
 
-/* Top N */
+/* Top N summary */
+.topn-summary-line {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.topn-summary-kw {
+  color: var(--accent);
+  margin-left: 4px;
+}
+
+/* Top N cards */
 .topn-cat-card {
   margin-top: 10px;
 }
 
 .topn-section-title {
-  padding: 10px 14px 4px;
+  padding: 10px 14px 8px;
   font-size: 12px;
   color: var(--accent);
   font-weight: 500;
   letter-spacing: 0.04em;
+}
+
+.topn-title-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 14px;
 }
 
 .topn-item-row {
@@ -735,6 +777,15 @@ const monthlyBars = computed(() => {
 
 .topn-cat-row + .topn-cat-row {
   border-top: 1px solid var(--border);
+}
+
+.topn-cat-amount {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* Ranking rows */
