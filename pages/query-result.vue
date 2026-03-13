@@ -16,28 +16,28 @@
       <div class="qr-header">
         <div class="qr-title" v-html="result.title" />
         <div class="qr-sub">{{ formattedRange }}</div>
-        <template v-if="result.queryType === 'top_n'">
-          <div v-if="result.topItems?.length" class="topn-summary-line">
-            前{{ nToChinese(result.n) }}筆最高消費：<span
-              v-for="item in result.topItems"
-              :key="item.id"
-              class="topn-summary-kw"
-            >{{ item.name }}</span>
-          </div>
-          <div v-if="result.topCategories?.length" class="topn-summary-line">
-            前{{ nToChinese(result.n) }}高消費分類：<span
-              v-for="cat in result.topCategories"
-              :key="cat.cat"
-              class="topn-summary-kw"
-            >{{ cat.cat }}</span>
-          </div>
-        </template>
       </div>
 
-      <!-- Total -->
-      <div class="qr-total">
+      <!-- Summary area -->
+      <div v-if="result.queryType !== 'top_n'" class="qr-total">
         <span class="qr-total-label">總計</span>
         <span class="qr-total-amount">-{{ formatAmount(result.total) }}</span>
+      </div>
+      <div v-else class="qr-topn-summary">
+        <div v-if="result.topItems?.length" class="topn-summary-line">
+          前{{ nToChinese(result.n) }}筆最高消費：<span
+            v-for="item in result.topItems"
+            :key="item.id"
+            class="topn-summary-kw"
+          >{{ item.name }}</span>
+        </div>
+        <div v-if="result.topCategories?.length" class="topn-summary-line">
+          前{{ nToChinese(result.n) }}高消費分類：<span
+            v-for="cat in result.topCategories"
+            :key="cat.cat"
+            class="topn-summary-kw"
+          >{{ cat.cat }}</span>
+        </div>
       </div>
 
       <!-- Content -->
@@ -107,7 +107,10 @@
       <!-- top_n: top items + top categories -->
       <template v-else-if="result.queryType === 'top_n'">
         <div class="item-card">
-          <div class="topn-section-title">消費項目</div>
+          <div class="topn-section-header">
+            <span class="topn-section-label">消費項目</span>
+            <span class="topn-section-total">-{{ formatAmount(topItemsTotal) }}</span>
+          </div>
           <div class="topn-title-divider" />
           <div v-for="item in result.topItems" :key="item.id" class="topn-item-row">
             <div class="item-icon" :style="{ background: catColor(item.category) }">
@@ -123,7 +126,10 @@
           <div v-if="!result.topItems?.length" class="item-empty">此期間無紀錄</div>
         </div>
         <div v-if="showTopCatSection" class="item-card topn-cat-card">
-          <div class="topn-section-title">分類項目</div>
+          <div class="topn-section-header">
+            <span class="topn-section-label">分類項目</span>
+            <span class="topn-section-total">-{{ formatAmount(topCategoriesTotal) }}</span>
+          </div>
           <div class="topn-title-divider" />
           <div v-for="cat in result.topCategories" :key="cat.cat" class="topn-cat-row">
             <div class="item-icon" :style="{ background: catColor(cat.cat) }">
@@ -352,6 +358,13 @@ onMounted(async () => {
 })
 
 // ── Top N ──────────────────────────────────────────────────────────────────────
+const topItemsTotal = computed(() =>
+  (result.value.topItems ?? []).reduce((s: number, i: { amount: number }) => s + i.amount, 0),
+)
+const topCategoriesTotal = computed(() =>
+  (result.value.topCategories ?? []).reduce((s: number, c: { total: number }) => s + c.total, 0),
+)
+
 const showTopCatSection = computed(() => {
   const items = result.value.topItems ?? []
   const cats = result.value.topCategories ?? []
@@ -613,10 +626,18 @@ const monthlyBars = computed(() => {
 /* Total */
 .qr-total {
   flex-shrink: 0;
-  padding: 20px 24px 16px;
+  padding: 40px 24px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+/* Top N summary */
+.qr-topn-summary {
+  flex-shrink: 0;
+  padding: 40px 24px 24px;
   position: relative;
   z-index: 1;
 }
@@ -737,12 +758,24 @@ const monthlyBars = computed(() => {
   margin-top: 10px;
 }
 
-.topn-section-title {
-  padding: 10px 14px 8px;
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 500;
-  letter-spacing: 0.04em;
+.topn-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+}
+
+.topn-section-label {
+  font-size: 13px;
+  color: #B18272;
+}
+
+.topn-section-total {
+  font-size: 22px;
+  font-weight: 700;
+  color: #8B5E3C;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .topn-title-divider {
