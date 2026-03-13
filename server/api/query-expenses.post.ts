@@ -141,7 +141,14 @@ queryType 規則（請嚴格遵守，優先順序由上到下）：
 - analysis_compare：用於「這個月和上個月比」、「本月 vs 上月」、「與上期比較」等跨期總額比較。需填 compareFrom/compareTo（前期日期範圍）、currentLabel/previousLabel（各期名稱）
 - analysis_peak：用於「哪天消費最高」、「消費高峰日」、「最多花了哪天」等單日高低峰分析
 - analysis_category_change：用於「類別消費有沒有變化」、「哪個類別增加最多」、「各類別這個月比上個月」等類別跨期變化分析。需填 compareFrom/compareTo、currentLabel/previousLabel
-- analysis_ratio：用於「某項目佔比」、「占幾%」、「比例」、「花了多少比例」等消費佔比查詢。必須有指定的品項或類別關鍵字，透過 queries 傳入（與 nameKeyword/category 相同規則）
+- analysis_ratio：用於「某項目佔比」、「比例」、「占幾%」、「占多少」、「花了多少比例」等消費佔比查詢。
+  ⚠️ 重要：queries 欄位必填且不可為空陣列，必須包含要計算佔比的品項或類別關鍵字
+  ⚠️ 重要：「比較」、「比上月」、「比上週」→ analysis_compare，不是 analysis_ratio！只有「佔比」、「比例」、「占幾%」才是 analysis_ratio
+  範例：
+    「本月咖啡消費比例」→ queryType:"analysis_ratio", queries:[{"type":"nameKeyword","value":"咖啡","expandedKeywords":["咖啡","拿鐵","美式","卡布"]}]
+    「飲料占本月消費多少」→ queryType:"analysis_ratio", queries:[{"type":"category","value":"飲料"}]
+    「美妝佔比多少」→ queryType:"analysis_ratio", queries:[{"type":"category","value":"美妝"}]
+    「學習花費占比」→ queryType:"analysis_ratio", queries:[{"type":"category","value":"學習"}]
 - grouped：queries 有多項時優先使用，每個 query 各自成一組
 
 n 規則（僅 top_n 時有效）：
@@ -351,6 +358,7 @@ title 補充規則（analysis 時）：
     else if (effectiveQueryType === 'analysis_ratio') {
       const q = queryItems[0]
       if (q) {
+        keyword = q.value
         const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q.value]
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const allInRange = (guestExpenses as any[]).filter((r: { created_at: string }) => {
@@ -448,6 +456,7 @@ title 補充規則（analysis 時）：
     else if (effectiveQueryType === 'analysis_ratio') {
       const q = queryItems[0]
       if (q) {
+        keyword = q.value
         const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q.value]
         // Keyword items
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -600,10 +609,8 @@ title 補充規則（analysis 時）：
       })).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
     }
     else if (effectiveQueryType === 'analysis_ratio') {
-      keyword = queryItems[0]?.value ?? ''
-      const keywordTotal = total
-      ratioOfGrand = grandTotal > 0 ? Math.round((keywordTotal / grandTotal) * 1000) / 10 : 0
-      ratioOfCategory = categoryTotal > 0 ? Math.round((keywordTotal / categoryTotal) * 1000) / 10 : 0
+      ratioOfGrand = grandTotal > 0 ? Math.round((total / grandTotal) * 1000) / 10 : 0
+      ratioOfCategory = categoryTotal > 0 ? Math.round((total / categoryTotal) * 1000) / 10 : 0
     }
   }
 
