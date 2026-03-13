@@ -41,9 +41,12 @@
           </div>
           <div v-for="(record, i) in group.records" :key="record.id ?? i" class="record-row">
             <div class="cat-icon" :style="{ background: catColor(record.category) }">
-              <CatIcon :category="record.category" :size="18" :stroke-width="1.8" />
+              <CatIcon :category="record.category" :size="14" :stroke-width="1.8" />
             </div>
-            <span class="row-name">{{ record.name }}</span>
+            <div class="row-info">
+              <span class="row-name">{{ record.name }}</span>
+              <span class="row-cat">{{ record.category }}</span>
+            </div>
             <span class="row-amount">-{{ record.amount }}</span>
             <button class="row-edit-btn" @click="openEdit(record)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -567,11 +570,10 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 
 /* Record Row */
 .record-row {
-  display: grid;
-  grid-template-columns: 36px 1fr auto 44px;
-  padding: 10px 8px 10px 16px;
+  display: flex;
   align-items: center;
   gap: 10px;
+  padding: 10px 8px 10px 14px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -580,8 +582,8 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 }
 
 .cat-icon {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -589,22 +591,34 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   flex-shrink: 0;
 }
 
+.row-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
 
 .row-name {
   font-size: 14px;
   color: var(--text);
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.row-cat {
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
 .row-amount {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .row-edit-btn {
