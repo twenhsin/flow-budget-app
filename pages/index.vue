@@ -27,6 +27,7 @@
           ref="textInput"
           v-model="inputValue"
           type="text"
+          maxlength="200"
           :placeholder="isQuerying ? 'AI 分析中...' : currentPlaceholder"
           :disabled="isQuerying"
           enterkeyhint="done"
@@ -66,7 +67,7 @@ import { getGuestExpenses } from '~/composables/useGuestExpenses'
 definePageMeta({ layout: 'default' })
 
 const user = useSupabaseUser()
-const { clearRecords, addRecord, parseTextEntryAI } = useRecords()
+const { clearRecords, addRecord, parseTextEntry, parseTextEntryAI } = useRecords()
 const { categories } = useUserCategories()
 
 // Tabs
@@ -116,7 +117,18 @@ const handleSubmit = async () => {
   if (activeTab.value === 'record') {
     inputValue.value = ''
     clearRecords()
-    addRecord(await parseTextEntryAI(val))
+    try {
+      addRecord(await parseTextEntryAI(val))
+    }
+    catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((e as any)?.data?.message === 'off_topic') {
+        queryError.value = '請輸入消費紀錄，例如：午餐100元'
+        setTimeout(() => { queryError.value = '' }, 4000)
+        return
+      }
+      addRecord(parseTextEntry(val))
+    }
     navigateTo('/record?mode=confirm')
     return
   }
@@ -138,8 +150,11 @@ const handleSubmit = async () => {
     queryResult.value = data
     navigateTo('/query-result')
   }
-  catch {
-    queryError.value = '查詢失敗，請重試'
+  catch (e: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    queryError.value = (e as any)?.data?.message === 'off_topic'
+      ? '請輸入消費相關查詢，例如：本月餐費多少'
+      : '查詢失敗，請重試'
     setTimeout(() => { queryError.value = '' }, 4000)
   }
   finally {

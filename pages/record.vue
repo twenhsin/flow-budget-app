@@ -45,6 +45,7 @@
               ref="textInput"
               class="action-text-input"
               placeholder="輸入你的消費"
+              maxlength="200"
               enterkeyhint="done"
               @keydown.enter="handleTextEnter"
             >
@@ -108,7 +109,10 @@ const isSaving = ref(false)
 const saveError = ref('')
 
 const { isListening, interimTranscript, startVoice, stopVoice, toggleVoice } = useVoiceInput({
-  onFinal: async (text) => addRecord(await parseTextEntryAI(text)),
+  onFinal: async (text) => {
+    try { addRecord(await parseTextEntryAI(text)) }
+    catch { addRecord(parseTextEntry(text)) }
+  },
 })
 
 const formattedDate = computed(() => {
@@ -125,7 +129,17 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   const val = input.value.trim()
   if (!val) return
   input.value = ''
-  addRecord(await parseTextEntryAI(val))
+  try {
+    addRecord(await parseTextEntryAI(val))
+  }
+  catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((err as any)?.data?.message === 'off_topic') {
+      saveError.value = '請輸入消費紀錄，例如：午餐100元'
+      setTimeout(() => { saveError.value = '' }, 4000)
+    }
+    else { addRecord(parseTextEntry(val)) }
+  }
 }
 
 const handleTextAdd = async () => {
@@ -135,7 +149,17 @@ const handleTextAdd = async () => {
   if (!val) return
   input.value = ''
   input.focus()
-  addRecord(await parseTextEntryAI(val))
+  try {
+    addRecord(await parseTextEntryAI(val))
+  }
+  catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((err as any)?.data?.message === 'off_topic') {
+      saveError.value = '請輸入消費紀錄，例如：午餐100元'
+      setTimeout(() => { saveError.value = '' }, 4000)
+    }
+    else { addRecord(parseTextEntry(val)) }
+  }
 }
 
 const openEdit = (index: number) => {

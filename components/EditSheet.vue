@@ -88,9 +88,11 @@
                   v-model="addCatName"
                   class="add-cat-input"
                   type="text"
+                  maxlength="20"
                   placeholder="輸入類別名稱"
                   @keydown.enter.prevent="suggestCategory"
                 >
+                <div v-if="addCatError" class="add-cat-error">{{ addCatError }}</div>
                 <div class="add-modal-actions">
                   <button class="add-modal-cancel" @click="closeAddModal">取消</button>
                   <button class="add-modal-confirm" :disabled="!addCatName.trim()" @click="suggestCategory">
@@ -283,6 +285,7 @@ type AddStep = 'input' | 'loading' | 'preview' | 'picker'
 const addModalOpen = ref(false)
 const addStep = ref<AddStep>('input')
 const addCatName = ref('')
+const addCatError = ref('')
 const addCatInput = ref<HTMLInputElement | null>(null)
 const suggestion = ref<{ icon: string; color: string } | null>(null)
 const pickerIcons = ref<string[]>([])
@@ -309,6 +312,7 @@ const getUsedColors = () => [
 
 const suggestCategory = async () => {
   if (!addCatName.value.trim()) return
+  addCatError.value = ''
   addStep.value = 'loading'
   try {
     const usedIcons = categories.value.map(c => c.icon)
@@ -320,9 +324,17 @@ const suggestCategory = async () => {
     suggestion.value = data
     addStep.value = 'preview'
   }
-  catch {
-    suggestion.value = { icon: 'ShoppingBag', color: '#C4B49A' }
-    addStep.value = 'preview'
+  catch (e: unknown) {
+    addStep.value = 'input'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((e as any)?.data?.message === 'off_topic') {
+      addCatError.value = '請輸入消費類別名稱'
+      setTimeout(() => { addCatError.value = '' }, 4000)
+    }
+    else {
+      suggestion.value = { icon: 'ShoppingBag', color: '#C4B49A' }
+      addStep.value = 'preview'
+    }
   }
 }
 
@@ -796,6 +808,13 @@ h3 {
 
 .add-cat-input:focus {
   border-color: var(--accent);
+}
+
+.add-cat-error {
+  font-size: 12px;
+  color: rgba(200, 60, 60, 0.9);
+  text-align: center;
+  margin-bottom: 10px;
 }
 
 .add-modal-actions {

@@ -64,6 +64,7 @@
           type="text"
           class="bar-input"
           placeholder="輸入你的消費"
+          maxlength="200"
           enterkeyhint="done"
           @keydown.enter="handleTextEnter"
         >
@@ -108,6 +109,9 @@
     <div v-if="isSaving" class="saving-overlay">
       <div class="saving-spinner" />
     </div>
+
+    <!-- Parse error toast -->
+    <div v-if="parseError" class="parse-error-toast">{{ parseError }}</div>
   </div>
 </template>
 
@@ -251,6 +255,7 @@ const deleteRecord = async () => {
 
 // Text input
 const textInput = ref<HTMLInputElement | null>(null)
+const parseError = ref('')
 
 const saveNewRecord = async (record: BudgetRecord) => {
   isSaving.value = true
@@ -271,12 +276,27 @@ const saveNewRecord = async (record: BudgetRecord) => {
   await fetchRecords()
 }
 
+const handleParseError = (e: unknown) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((e as any)?.data?.message === 'off_topic') {
+    parseError.value = '請輸入消費紀錄，例如：午餐100元'
+    setTimeout(() => { parseError.value = '' }, 4000)
+    return true
+  }
+  return false
+}
+
 const handleTextEnter = async (e: KeyboardEvent) => {
   const input = e.target as HTMLInputElement
   const val = input.value.trim()
   if (!val) return
   input.value = ''
-  await saveNewRecord(await parseTextEntryAI(val))
+  try {
+    await saveNewRecord(await parseTextEntryAI(val))
+  }
+  catch (err: unknown) {
+    if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
+  }
 }
 
 const handleAddClick = async () => {
@@ -285,12 +305,20 @@ const handleAddClick = async () => {
   const val = input.value.trim()
   if (!val) return
   input.value = ''
-  await saveNewRecord(await parseTextEntryAI(val))
+  try {
+    await saveNewRecord(await parseTextEntryAI(val))
+  }
+  catch (err: unknown) {
+    if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
+  }
 }
 
 // Voice
 const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
-  onFinal: async (text) => saveNewRecord(await parseTextEntryAI(text)),
+  onFinal: async (text) => {
+    try { await saveNewRecord(await parseTextEntryAI(text)) }
+    catch { await saveNewRecord(parseTextEntry(text)) }
+  },
 })
 </script>
 
@@ -724,5 +752,20 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.parse-error-toast {
+  position: fixed;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(200, 60, 60, 0.9);
+  color: white;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
 }
 </style>

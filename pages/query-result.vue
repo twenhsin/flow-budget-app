@@ -184,6 +184,7 @@
           ref="inputRef"
           v-model="inputValue"
           class="qr-input"
+          maxlength="200"
           :placeholder="isLoading ? 'AI 分析中...' : '繼續查詢...'"
           :disabled="isLoading"
           enterkeyhint="done"
@@ -304,8 +305,10 @@ const handleSubmit = async () => {
     result.value = data
   }
   catch (e: unknown) {
-    const msg = (e as { data?: { message?: string } })?.data?.message ?? '查詢失敗，請再試一次'
-    errorMsg.value = msg
+    const apiMsg = (e as { data?: { message?: string } })?.data?.message
+    errorMsg.value = apiMsg === 'off_topic'
+      ? '請輸入消費相關查詢，例如：本月餐費多少'
+      : (apiMsg ?? '查詢失敗，請再試一次')
     setTimeout(() => { errorMsg.value = '' }, 4000)
   }
   finally {

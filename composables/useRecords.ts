@@ -39,15 +39,18 @@ export const useRecords = () => {
   }
 
   const parseTextEntryAI = async (text: string): Promise<BudgetRecord> => {
+    const truncated = text.slice(0, 200)
     try {
       const userCategories = getUserCategories().map(c => c.name)
       const data = await $fetch<{ name: string; amount: number; category: string }>('/api/parse-entry', {
         method: 'POST',
-        body: { text, userCategories },
+        body: { text: truncated, userCategories },
       })
       return { name: data.name, amount: data.amount, category: data.category }
     }
-    catch {
+    catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((e as any)?.data?.message === 'off_topic') throw e
       return parseTextEntry(text)
     }
   }
