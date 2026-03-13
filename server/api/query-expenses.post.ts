@@ -101,17 +101,18 @@ queries 規則：
 - type "category"：關鍵字對應到已知類別（以下預設類別或自訂類別）時使用
   預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
   自訂類別優先比對，相符則使用完整自訂類別名稱
+  ⚠️ 重要：「3C」、「3c」、「3C用品」是科技產品的消費類別名稱，不是數量。若輸入包含「3C」且與類別相符，type 必須為 "category"，value 為完整類別名稱（如「3C」）
 - type "nameKeyword"：關鍵字是品項名稱（如咖啡、便當、按摩）時使用，必須同時提供 expandedKeywords 陣列，包含所有語意相關的同義詞、品項變體、英文別名（最多 10 個）
   例：{ "type": "nameKeyword", "value": "咖啡", "expandedKeywords": ["咖啡", "拿鐵", "美式", "卡布奇諾", "冰咖啡", "榛果", "摩卡", "濃縮"] }
   例：{ "type": "nameKeyword", "value": "傳輸線", "expandedKeywords": ["傳輸線", "數據線", "充電線", "lightning", "usb"] }
   例：{ "type": "nameKeyword", "value": "按摩", "expandedKeywords": ["按摩", "spa", "推拿", "指壓", "泰式按摩"] }
 - 即使關鍵字之間沒有任何標點符號，也必須嘗試將輸入拆解為多個關鍵字，不可只取第一個
-  例如「3c學習按摩」→ [{ type:"nameKeyword", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
+  例如「3c學習按摩」→ [{ type:"category", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
 - 多個關鍵字範例：
   「學習與spa」→ [{ type:"category", value:"學習" }, { type:"category", value:"spa" }]
   「按摩和咖啡」→ [{ type:"nameKeyword", value:"按摩" }, { type:"nameKeyword", value:"咖啡" }]
   「spa和餐飲」→ [{ type:"category", value:"spa" }, { type:"category", value:"餐飲" }]
-  「3c學習按摩」→ [{ type:"nameKeyword", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
+  「3c學習按摩」→ [{ type:"category", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
 - 沒有特定關鍵字（查全部）時設為 []
 
 title 規則：
@@ -124,7 +125,9 @@ title 規則：
 
 queryType 規則（請嚴格遵守，優先順序由上到下）：
 - top_n（最優先判斷）：用於「最高消費」、「最貴的」、「花最多的」、「前N名/項/筆」、「哪個最貴」、「單筆最高」等只需列前N筆的查詢。不論有沒有指定數量 N，只要是問「哪個最高/最貴/最多」都是 top_n
+  ⚠️ 重要：「3C消費」、「3c花費」是類別查詢，不是 top_n！只有「前三項」、「前3筆」、「top3」才代表數量。「3」或「3C」出現在類別名稱中時，絕對不是數量
   範例：「最高消費」→ top_n, n:1 ｜ 「花最多的是什麼」→ top_n, n:1 ｜ 「前三項消費」→ top_n, n:3
+  反例（不是 top_n）：「3C消費」→ list/grouped ｜ 「3c花了多少」→ total
 - ranking：僅用於「各類別排行」、「各類別佔比」、「消費分佈」、「哪個類別花最多」等需要列出所有類別完整排名的查詢。ranking 絕不適用於單筆消費項目的查詢
   範例：「消費排行」→ ranking ｜ 「各類別佔比」→ ranking ｜ 「本月支出分佈」→ ranking
 - total：問總金額、花多少、共花了多少
