@@ -85,7 +85,7 @@ ${dateHints}
   "dateTo": "YYYY-MM-DD",
   "queries": [
     { "type": "category", "value": "類別名稱" },
-    { "type": "nameKeyword", "value": "品項關鍵字" }
+    { "type": "nameKeyword", "value": "品項關鍵字", "expandedKeywords": ["原始詞", "同義詞1", "變體2"] }
   ],
   "queryType": "total | list | ranking | monthly | grouped | top_n",
   "n": 3,
@@ -101,7 +101,10 @@ queries 規則：
 - type "category"：關鍵字對應到已知類別（以下預設類別或自訂類別）時使用
   預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
   自訂類別優先比對，相符則使用完整自訂類別名稱
-- type "nameKeyword"：關鍵字是品項名稱（如咖啡、便當、按摩）時使用
+- type "nameKeyword"：關鍵字是品項名稱（如咖啡、便當、按摩）時使用，必須同時提供 expandedKeywords 陣列，包含所有語意相關的同義詞、品項變體、英文別名（最多 10 個）
+  例：{ "type": "nameKeyword", "value": "咖啡", "expandedKeywords": ["咖啡", "拿鐵", "美式", "卡布奇諾", "冰咖啡", "榛果", "摩卡", "濃縮"] }
+  例：{ "type": "nameKeyword", "value": "傳輸線", "expandedKeywords": ["傳輸線", "數據線", "充電線", "lightning", "usb"] }
+  例：{ "type": "nameKeyword", "value": "按摩", "expandedKeywords": ["按摩", "spa", "推拿", "指壓", "泰式按摩"] }
 - 即使關鍵字之間沒有任何標點符號，也必須嘗試將輸入拆解為多個關鍵字，不可只取第一個
   例如「3c學習按摩」→ [{ type:"nameKeyword", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
 - 多個關鍵字範例：
@@ -138,7 +141,7 @@ title 補充規則（top_n 時）：
 - N 以中文數字表示（1→一, 2→二, 3→三, 4→四, 5→五...）`,
       },
     ],
-    max_tokens: 400,
+    max_tokens: 600,
   }
 
   let gptResponse: Response
@@ -199,7 +202,7 @@ title 補充規則（top_n 時）：
   const dateTo = dateToExclusive.toISOString().slice(0, 10)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const queryItems: { type: string; value: string }[] = Array.isArray(parsed.queries) ? parsed.queries : []
+  const queryItems: { type: string; value: string; expandedKeywords?: string[] }[] = Array.isArray(parsed.queries) ? parsed.queries : []
   const effectiveQueryType = queryType === 'top_n' ? 'top_n' : (queryItems.length > 1 ? 'grouped' : queryType)
 
   console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, queryItems, queryType: effectiveQueryType, title }))
@@ -250,7 +253,12 @@ title 補充規則（top_n 時）：
           const d = r.created_at.slice(0, 10)
           if (d < dateFrom || d >= dateTo) return false
           if (q.type === 'category') return r.category === q.value
-          if (q.type === 'nameKeyword') return r.name.toLowerCase().includes(q.value.toLowerCase())
+          if (q.type === 'nameKeyword') {
+            const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0
+              ? q.expandedKeywords
+              : [q.value]
+            return kws.some((kw: string) => r.name.toLowerCase().includes(kw.toLowerCase()))
+          }
           return false
         })
         groups.push({ label: q.value, total: sumAmount(qItems), items: qItems })
@@ -310,7 +318,10 @@ title 補充規則（top_n 時）：
           qQuery = qQuery.eq('category', q.value)
         }
         else if (q.type === 'nameKeyword') {
-          qQuery = qQuery.ilike('name', `%${q.value}%`)
+          const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0
+            ? q.expandedKeywords
+            : [q.value]
+          qQuery = qQuery.or(kws.map((kw: string) => `name.ilike.%${kw}%`).join(','))
         }
 
         const { data: qData, error: qError } = await qQuery.order('created_at', { ascending: false })

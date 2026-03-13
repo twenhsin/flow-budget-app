@@ -626,7 +626,7 @@ const monthlyBars = computed(() => {
 /* Total */
 .qr-total {
   flex-shrink: 0;
-  padding: 40px 24px 24px;
+  padding: 24px 24px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -637,7 +637,7 @@ const monthlyBars = computed(() => {
 /* Top N summary */
 .qr-topn-summary {
   flex-shrink: 0;
-  padding: 40px 24px 24px;
+  padding: 24px 24px 24px;
   position: relative;
   z-index: 1;
 }
