@@ -19,7 +19,7 @@
       </div>
 
       <!-- Summary area -->
-      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change'" class="qr-total">
+      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio'" class="qr-total">
         <span class="qr-total-label">總計</span>
         <span class="qr-total-amount">-{{ formatAmount(result.total) }}</span>
       </div>
@@ -35,6 +35,28 @@
         </div>
         <div class="compare-sum-diff" :class="compareDiff >= 0 ? 'change-up' : 'change-down'">
           {{ compareDiff >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(compareDiff)) }}
+        </div>
+      </div>
+      <div v-else-if="result.queryType === 'analysis_ratio'" class="qr-ratio-summary">
+        <div class="ratio-block">
+          <div class="ratio-block-header">
+            <span class="ratio-block-label">總消費佔比</span>
+            <span class="ratio-block-pct">{{ result.ratioOfGrand ?? 0 }}%</span>
+          </div>
+          <div class="ratio-bar-bg">
+            <div class="ratio-bar-fill" :style="{ width: Math.min(result.ratioOfGrand ?? 0, 100) + '%' }" />
+          </div>
+          <div class="ratio-block-sub">本期總消費：{{ formatAmount(result.grandTotal ?? 0) }}</div>
+        </div>
+        <div v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-block ratio-block-gap">
+          <div class="ratio-block-header">
+            <span class="ratio-block-label">{{ result.keywordCategory }}消費佔比</span>
+            <span class="ratio-block-pct">{{ result.ratioOfCategory ?? 0 }}%</span>
+          </div>
+          <div class="ratio-bar-bg">
+            <div class="ratio-bar-fill" :style="{ width: Math.min(result.ratioOfCategory ?? 0, 100) + '%' }" />
+          </div>
+          <div class="ratio-block-sub">本期{{ result.keywordCategory }}總消費：{{ formatAmount(result.categoryTotal ?? 0) }}</div>
         </div>
       </div>
       <div v-else class="qr-topn-summary">
@@ -173,6 +195,23 @@
               <span class="topn-cat-amount">{{ formatAmount(cat.total) }}</span>
             </div>
           </template>
+        </div>
+      </template>
+
+      <!-- analysis_ratio: keyword item detail list -->
+      <template v-else-if="result.queryType === 'analysis_ratio'">
+        <div class="item-card">
+          <div v-for="item in result.items" :key="item.id" class="item-row">
+            <div class="item-icon" :style="{ background: catColor(item.category) }">
+              <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
+            </div>
+            <div class="item-info">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-cat">{{ item.category }}</span>
+            </div>
+            <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
+          </div>
+          <div v-if="result.items.length === 0" class="item-empty">此期間無紀錄</div>
         </div>
       </template>
 
@@ -356,7 +395,7 @@ interface GroupEntry {
 interface QueryResult {
   title: string
   queryType: 'total' | 'list' | 'ranking' | 'monthly' | 'grouped' | 'top_n'
-    | 'analysis_trend' | 'analysis_compare' | 'analysis_peak' | 'analysis_category_change'
+    | 'analysis_trend' | 'analysis_compare' | 'analysis_peak' | 'analysis_category_change' | 'analysis_ratio'
   total: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: any[]
@@ -379,6 +418,13 @@ interface QueryResult {
   analysisPeakDay?: { date: string; total: number } | null
   analysisValleyDay?: { date: string; total: number } | null
   analysisCategoryChanges?: { cat: string; current: number; prev: number; diff: number }[]
+  keyword?: string
+  keywordTotal?: number
+  keywordCategory?: string
+  categoryTotal?: number
+  grandTotal?: number
+  ratioOfGrand?: number
+  ratioOfCategory?: number
 }
 
 const result = useState<QueryResult>('queryResult', () => ({
@@ -1091,6 +1137,63 @@ const monthlyBars = computed(() => {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* Ratio summary */
+.qr-ratio-summary {
+  flex-shrink: 0;
+  padding: 20px 24px 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.ratio-block {
+  margin-bottom: 16px;
+}
+
+.ratio-block-gap {
+  margin-top: 4px;
+}
+
+.ratio-block-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ratio-block-label {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.ratio-block-pct {
+  font-family: 'Chivo Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+.ratio-bar-bg {
+  background: #E8E0D8;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.ratio-bar-fill {
+  background: var(--accent);
+  border-radius: 4px;
+  height: 8px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.ratio-block-sub {
+  font-size: 11px;
+  color: var(--text-soft);
+  margin-top: 5px;
 }
 
 /* Compare summary */

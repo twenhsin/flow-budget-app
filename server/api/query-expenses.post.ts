@@ -91,7 +91,7 @@ ${dateHints}
     { "type": "category", "value": "類別名稱" },
     { "type": "nameKeyword", "value": "品項關鍵字", "expandedKeywords": ["原始詞", "同義詞1", "變體2"] }
   ],
-  "queryType": "total | list | ranking | monthly | grouped | top_n | analysis_trend | analysis_compare | analysis_peak | analysis_category_change",
+  "queryType": "total | list | ranking | monthly | grouped | top_n | analysis_trend | analysis_compare | analysis_peak | analysis_category_change | analysis_ratio",
   "n": 3,
   "title": "精確的繁體中文結果頁標題"
 }
@@ -141,6 +141,7 @@ queryType 規則（請嚴格遵守，優先順序由上到下）：
 - analysis_compare：用於「這個月和上個月比」、「本月 vs 上月」、「與上期比較」等跨期總額比較。需填 compareFrom/compareTo（前期日期範圍）、currentLabel/previousLabel（各期名稱）
 - analysis_peak：用於「哪天消費最高」、「消費高峰日」、「最多花了哪天」等單日高低峰分析
 - analysis_category_change：用於「類別消費有沒有變化」、「哪個類別增加最多」、「各類別這個月比上個月」等類別跨期變化分析。需填 compareFrom/compareTo、currentLabel/previousLabel
+- analysis_ratio：用於「某項目佔比」、「占幾%」、「比例」、「花了多少比例」等消費佔比查詢。必須有指定的品項或類別關鍵字，透過 queries 傳入（與 nameKeyword/category 相同規則）
 - grouped：queries 有多項時優先使用，每個 query 各自成一組
 
 n 規則（僅 top_n 時有效）：
@@ -159,7 +160,8 @@ title 補充規則（analysis 時）：
 - analysis_trend：時間詞 + 「消費週趨勢」，例：「本月消費週趨勢」
 - analysis_compare：currentLabel + 「 vs 」 + previousLabel + 「消費比較」，例：「本月 vs 上月消費比較」
 - analysis_peak：時間詞 + 「消費高峰日」，例：「本月消費高峰日」
-- analysis_category_change：時間詞 + 「各類別消費變化」，例：「本月各類別消費變化」`,
+- analysis_category_change：時間詞 + 「各類別消費變化」，例：「本月各類別消費變化」
+- analysis_ratio：時間詞 + <span class="title-keyword">關鍵字</span> + 「消費佔比」，例：「本月 <span class="title-keyword">咖啡</span> 消費佔比」`,
       },
     ],
     max_tokens: 800,
@@ -259,6 +261,12 @@ title 補充規則（analysis 時）：
   let analysisValleyDay: { date: string; total: number } | null = null
   let analysisCategoryChanges: { cat: string; current: number; prev: number; diff: number }[] = []
   let compareTotal = 0
+  let keyword = ''
+  let keywordCategory = ''
+  let categoryTotal = 0
+  let grandTotal = 0
+  let ratioOfGrand = 0
+  let ratioOfCategory = 0
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
@@ -340,6 +348,30 @@ title 補充規則（analysis 時）：
       topCategories = result.topCategories
       topCategoryItems = result.topCategoryItems
     }
+    else if (effectiveQueryType === 'analysis_ratio') {
+      const q = queryItems[0]
+      if (q) {
+        const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q.value]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allInRange = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+          const d = r.created_at.slice(0, 10)
+          return d >= dateFrom && d < dateTo
+        })
+        grandTotal = sumAmount(allInRange)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        items = allInRange.filter((r: any) => {
+          if (q.type === 'category') return r.category === q.value
+          return kws.some((kw: string) => r.name.toLowerCase().includes(kw.toLowerCase()))
+        })
+        if (items.length > 0) {
+          const catCounts: Record<string, number> = {}
+          for (const r of items) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
+          keywordCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          categoryTotal = sumAmount(allInRange.filter((r: any) => r.category === keywordCategory))
+        }
+      }
+    }
     else if (isAnalysisType) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       items = (guestExpenses as any[]).filter((r: { created_at: string }) => {
@@ -412,6 +444,53 @@ title 補充規則（analysis 時）：
       topItems = result.topItems
       topCategories = result.topCategories
       topCategoryItems = result.topCategoryItems
+    }
+    else if (effectiveQueryType === 'analysis_ratio') {
+      const q = queryItems[0]
+      if (q) {
+        const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q.value]
+        // Keyword items
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let kQuery = (client as any)
+          .from('expenses')
+          .select('id, name, amount, category, created_at')
+          .eq('user_id', user.id)
+          .gte('created_at', dateFrom)
+          .lt('created_at', dateTo)
+        if (q.type === 'category') {
+          kQuery = kQuery.eq('category', q.value)
+        }
+        else {
+          kQuery = kQuery.or(kws.map((kw: string) => `name.ilike.%${kw}%`).join(','))
+        }
+        const { data: kData, error: kError } = await kQuery.order('created_at', { ascending: false })
+        if (kError) console.error('[query-expenses] ratio keyword 查詢失敗:', kError)
+        items = kData ?? []
+        // Grand total
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: allData } = await (client as any)
+          .from('expenses')
+          .select('amount')
+          .eq('user_id', user.id)
+          .gte('created_at', dateFrom)
+          .lt('created_at', dateTo)
+        grandTotal = sumAmount(allData ?? [])
+        // Category total (detected from keyword items)
+        if (items.length > 0) {
+          const catCounts: Record<string, number> = {}
+          for (const r of items) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
+          keywordCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: catData } = await (client as any)
+            .from('expenses')
+            .select('amount')
+            .eq('user_id', user.id)
+            .eq('category', keywordCategory)
+            .gte('created_at', dateFrom)
+            .lt('created_at', dateTo)
+          categoryTotal = sumAmount(catData ?? [])
+        }
+      }
     }
     else if (isAnalysisType) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -520,6 +599,12 @@ title 補充規則（analysis 時）：
         diff: (currentCats[cat] ?? 0) - (prevCats[cat] ?? 0),
       })).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
     }
+    else if (effectiveQueryType === 'analysis_ratio') {
+      keyword = queryItems[0]?.value ?? ''
+      const keywordTotal = total
+      ratioOfGrand = grandTotal > 0 ? Math.round((keywordTotal / grandTotal) * 1000) / 10 : 0
+      ratioOfCategory = categoryTotal > 0 ? Math.round((keywordTotal / categoryTotal) * 1000) / 10 : 0
+    }
   }
 
   // Step 3 — 回傳結果
@@ -552,5 +637,12 @@ title 補充規則（analysis 時）：
     analysisPeakDay,
     analysisValleyDay,
     analysisCategoryChanges,
+    keyword,
+    keywordTotal: total,
+    keywordCategory,
+    categoryTotal,
+    grandTotal,
+    ratioOfGrand,
+    ratioOfCategory,
   }
 })
