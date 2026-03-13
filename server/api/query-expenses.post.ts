@@ -215,6 +215,8 @@ title 補充規則（top_n 時）：
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let topItems: any[] = []
   let topCategories: { cat: string; total: number }[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let topCategoryItems: any[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
@@ -223,14 +225,23 @@ title 補充規則（top_n 時）：
   const computeTopN = (allItems: any[], n: number) => {
     const sortedItems = [...allItems].sort((a, b) => b.amount - a.amount).slice(0, n)
     const catTotals: Record<string, number> = {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const catItemsMap: Record<string, any[]> = {}
     for (const r of allItems) {
       catTotals[r.category] = (catTotals[r.category] ?? 0) + r.amount
+      if (!catItemsMap[r.category]) catItemsMap[r.category] = []
+      catItemsMap[r.category].push(r)
     }
     const sortedCats = Object.entries(catTotals)
       .sort(([, a], [, b]) => b - a)
       .slice(0, n)
       .map(([cat, total]) => ({ cat, total }))
-    return { topItems: sortedItems, topCategories: sortedCats }
+    // All items in the top category, sorted by date descending
+    const topCatItems = sortedCats.length > 0
+      ? [...(catItemsMap[sortedCats[0].cat] ?? [])].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      : []
+    return { topItems: sortedItems, topCategories: sortedCats, topCategoryItems: topCatItems }
   }
 
   if (isGuest) {
@@ -244,6 +255,7 @@ title 補充規則（top_n 時）：
       const result = computeTopN(allInRange, topN)
       topItems = result.topItems
       topCategories = result.topCategories
+      topCategoryItems = result.topCategoryItems
     }
     else if (queryItems.length > 0) {
       // 每個 query 獨立過濾
@@ -302,6 +314,7 @@ title 補充規則（top_n 時）：
       const result = computeTopN(items, topN)
       topItems = result.topItems
       topCategories = result.topCategories
+      topCategoryItems = result.topCategoryItems
     }
     else if (queryItems.length > 0) {
       // 每個 query 各跑一次 Supabase
@@ -374,6 +387,7 @@ title 補充規則（top_n 時）：
     groups,
     topItems,
     topCategories,
+    topCategoryItems,
     n: topN,
     dateFrom,
     dateTo,

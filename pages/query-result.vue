@@ -25,14 +25,18 @@
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
-          前{{ nToChinese(result.n) }}筆最高消費：<span
+          <template v-if="isTopN1">最高消費項目：</template>
+          <template v-else>前{{ nToChinese(result.n) }}筆最高消費：</template>
+          <span
             v-for="item in result.topItems"
             :key="item.id"
             class="topn-summary-kw"
           >{{ item.name }}</span>
         </div>
         <div v-if="result.topCategories?.length" class="topn-summary-line">
-          前{{ nToChinese(result.n) }}高消費分類：<span
+          <template v-if="isTopN1">最高消費分類：</template>
+          <template v-else>前{{ nToChinese(result.n) }}高消費分類：</template>
+          <span
             v-for="cat in result.topCategories"
             :key="cat.cat"
             class="topn-summary-kw"
@@ -127,17 +131,34 @@
         </div>
         <div v-if="showTopCatSection" class="item-card topn-cat-card">
           <div class="topn-section-header">
-            <span class="topn-section-label">分類項目</span>
+            <span class="topn-section-label">{{ topCatSectionLabel }}</span>
             <span class="topn-section-total">-{{ formatAmount(topCategoriesTotal) }}</span>
           </div>
           <div class="topn-title-divider" />
-          <div v-for="cat in result.topCategories" :key="cat.cat" class="topn-cat-row">
-            <div class="item-icon" :style="{ background: catColor(cat.cat) }">
-              <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
+          <!-- n=1: show all items in top category -->
+          <template v-if="isTopN1 && result.topCategoryItems?.length">
+            <div v-for="item in result.topCategoryItems" :key="item.id" class="topn-item-row">
+              <div class="item-icon" :style="{ background: catColor(item.category) }">
+                <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
+              </div>
+              <div class="item-info">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-cat">{{ item.category }}</span>
+              </div>
+              <span class="topn-item-date">{{ formatDateShort(item.created_at) }}</span>
+              <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
             </div>
-            <span class="rank-name">{{ cat.cat }}</span>
-            <span class="topn-cat-amount">{{ formatAmount(cat.total) }}</span>
-          </div>
+          </template>
+          <!-- n>1: show category totals ranking -->
+          <template v-else>
+            <div v-for="cat in result.topCategories" :key="cat.cat" class="topn-cat-row">
+              <div class="item-icon" :style="{ background: catColor(cat.cat) }">
+                <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
+              </div>
+              <span class="rank-name">{{ cat.cat }}</span>
+              <span class="topn-cat-amount">{{ formatAmount(cat.total) }}</span>
+            </div>
+          </template>
         </div>
       </template>
 
@@ -259,6 +280,8 @@ interface QueryResult {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   topItems?: any[]
   topCategories?: { cat: string; total: number }[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  topCategoryItems?: any[]
   n?: number
   dateFrom: string
   dateTo: string
@@ -372,6 +395,13 @@ const showTopCatSection = computed(() => {
   if (items.length === 1 && cats.length === 1 && items[0].category === cats[0].cat) return false
   return true
 })
+
+const isTopN1 = computed(() => (result.value.n ?? 3) === 1)
+const topCatSectionLabel = computed(() =>
+  isTopN1.value && result.value.topCategories?.[0]
+    ? result.value.topCategories[0].cat
+    : '分類項目',
+)
 
 // ── Ranking data ───────────────────────────────────────────────────────────────
 const rankingData = computed(() => {
