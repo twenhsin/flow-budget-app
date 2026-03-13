@@ -46,7 +46,6 @@
           <div class="ratio-bar-bg">
             <div class="ratio-bar-fill" :style="{ width: Math.min(result.ratioOfGrand ?? 0, 100) + '%' }" />
           </div>
-          <div class="ratio-block-sub">本期總消費：{{ formatAmount(result.grandTotal ?? 0) }}</div>
         </div>
         <div v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-block ratio-block-gap">
           <div class="ratio-block-header">
@@ -56,7 +55,11 @@
           <div class="ratio-bar-bg">
             <div class="ratio-bar-fill" :style="{ width: Math.min(result.ratioOfCategory ?? 0, 100) + '%' }" />
           </div>
-          <div class="ratio-block-sub">本期{{ result.keywordCategory }}總消費：{{ formatAmount(result.categoryTotal ?? 0) }}</div>
+        </div>
+        <div class="ratio-stats-row">
+          <span class="ratio-stat">總消費：{{ formatAmount(result.grandTotal ?? 0) }}</span>
+          <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}：{{ formatAmount(result.categoryTotal ?? 0) }}</span>
+          <span class="ratio-stat">{{ result.keyword }}：{{ formatAmount(result.total) }}</span>
         </div>
       </div>
       <div v-else class="qr-topn-summary">
@@ -1168,11 +1171,9 @@ const monthlyBars = computed(() => {
 }
 
 .ratio-block-pct {
-  font-family: 'Chivo Mono', monospace;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--accent);
-  letter-spacing: -0.02em;
 }
 
 .ratio-bar-bg {
@@ -1190,10 +1191,18 @@ const monthlyBars = computed(() => {
   min-width: 2px;
 }
 
-.ratio-block-sub {
+.ratio-stats-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.ratio-stat {
   font-size: 11px;
   color: var(--text-soft);
-  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* Compare summary */
