@@ -88,6 +88,35 @@
         </div>
       </template>
 
+      <!-- top_n: top items + top categories -->
+      <template v-else-if="result.queryType === 'top_n'">
+        <div class="item-card">
+          <div class="topn-section-title">消費項目</div>
+          <div v-for="item in result.topItems" :key="item.id" class="topn-item-row">
+            <div class="item-icon" :style="{ background: catColor(item.category) }">
+              <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
+            </div>
+            <div class="item-info">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-cat">{{ item.category }}</span>
+            </div>
+            <span class="topn-item-date">{{ formatDateShort(item.created_at) }}</span>
+            <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
+          </div>
+          <div v-if="!result.topItems?.length" class="item-empty">此期間無紀錄</div>
+        </div>
+        <div v-if="showTopCatSection" class="item-card topn-cat-card">
+          <div class="topn-section-title">分類項目</div>
+          <div v-for="cat in result.topCategories" :key="cat.cat" class="topn-cat-row">
+            <div class="item-icon" :style="{ background: catColor(cat.cat) }">
+              <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
+            </div>
+            <span class="rank-name">{{ cat.cat }}</span>
+            <span class="item-amount">{{ formatAmount(cat.total) }}</span>
+          </div>
+        </div>
+      </template>
+
       <!-- monthly: vertical bar chart (SVG) -->
       <template v-else-if="result.queryType === 'monthly'">
         <div class="item-card chart-card">
@@ -197,11 +226,15 @@ interface GroupEntry {
 
 interface QueryResult {
   title: string
-  queryType: 'total' | 'list' | 'ranking' | 'monthly' | 'grouped'
+  queryType: 'total' | 'list' | 'ranking' | 'monthly' | 'grouped' | 'top_n'
   total: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: any[]
   groups: GroupEntry[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  topItems?: any[]
+  topCategories?: { cat: string; total: number }[]
+  n?: number
   dateFrom: string
   dateTo: string
 }
@@ -233,6 +266,11 @@ function formatAmount(n: number) { return n.toLocaleString('zh-TW') }
 
 function formatDate(d: string) {
   return d ? d.replace(/-/g, '/') : ''
+}
+
+function formatDateShort(d: string) {
+  const date = new Date(d)
+  return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
 const formattedRange = computed(() =>
@@ -285,6 +323,15 @@ function groupDisplayLabel(g: GroupEntry): string {
 
 onMounted(async () => {
   await loadCategories()
+})
+
+// ── Top N ──────────────────────────────────────────────────────────────────────
+const showTopCatSection = computed(() => {
+  const items = result.value.topItems ?? []
+  const cats = result.value.topCategories ?? []
+  if (!cats.length) return false
+  if (items.length === 1 && cats.length === 1 && items[0].category === cats[0].cat) return false
+  return true
 })
 
 // ── Ranking data ───────────────────────────────────────────────────────────────
@@ -644,6 +691,47 @@ const monthlyBars = computed(() => {
   text-align: center;
   font-size: 14px;
   color: var(--text-soft);
+}
+
+/* Top N */
+.topn-cat-card {
+  margin-top: 10px;
+}
+
+.topn-section-title {
+  padding: 10px 14px 4px;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.topn-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.topn-item-row + .topn-item-row {
+  border-top: 1px solid var(--border);
+}
+
+.topn-item-date {
+  font-size: 11px;
+  color: var(--text-soft);
+  flex-shrink: 0;
+}
+
+.topn-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.topn-cat-row + .topn-cat-row {
+  border-top: 1px solid var(--border);
 }
 
 /* Ranking rows */

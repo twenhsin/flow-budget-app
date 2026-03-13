@@ -80,7 +80,8 @@ ${dateHints}
     { "type": "category", "value": "類別名稱" },
     { "type": "nameKeyword", "value": "品項關鍵字" }
   ],
-  "queryType": "total | list | ranking | monthly | grouped",
+  "queryType": "total | list | ranking | monthly | grouped | top_n",
+  "n": 3,
   "title": "精確的繁體中文結果頁標題"
 }
 
@@ -116,7 +117,18 @@ queryType 規則：
 - list：問明細、有哪些
 - ranking：問最高、排行、哪個類別最多
 - monthly：問逐月、每個月、各月比較
-- grouped：queries 有多項時優先使用，每個 query 各自成一組`,
+- grouped：queries 有多項時優先使用，每個 query 各自成一組
+- top_n：問前幾名、最高幾筆、哪幾項最貴（同時列出單筆前N和類別前N）
+
+n 規則（僅 top_n 時有效）：
+- 從用戶輸入解析數字：「前三項」→ 3，「最高五筆」→ 5，「最貴的」→ 1
+- 未指定時預設 3
+- 非 top_n 時設為 null
+
+title 補充規則（top_n 時）：
+- 格式：時間詞 + 「 前 」+ <span class="title-keyword">N中文</span> + 「 項消費」
+- 例：「本月 前 <span class="title-keyword">三</span> 項消費」
+- N 以中文數字表示（1→一, 2→二, 3→三, 4→四, 5→五...）`,
       },
     ],
     max_tokens: 400,
@@ -169,6 +181,7 @@ queryType 規則：
   }
 
   const { dateFrom, queryType, title } = parsed
+  const topN: number = typeof parsed.n === 'number' && parsed.n > 0 ? parsed.n : 3
   // dateTo 加一天，確保當天資料包含在內（.lt 是嚴格小於）
   const dateToExclusive = new Date(parsed.dateTo)
   dateToExclusive.setDate(dateToExclusive.getDate() + 1)
@@ -176,7 +189,7 @@ queryType 規則：
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryItems: { type: string; value: string }[] = Array.isArray(parsed.queries) ? parsed.queries : []
-  const effectiveQueryType = queryItems.length > 1 ? 'grouped' : queryType
+  const effectiveQueryType = queryType === 'top_n' ? 'top_n' : (queryItems.length > 1 ? 'grouped' : queryType)
 
   console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, queryItems, queryType: effectiveQueryType, title }))
 
@@ -185,12 +198,40 @@ queryType 規則：
   let items: any[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let groups: { label: string; total: number; items: any[] }[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let topItems: any[] = []
+  let topCategories: { cat: string; total: number }[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const computeTopN = (allItems: any[], n: number) => {
+    const sortedItems = [...allItems].sort((a, b) => b.amount - a.amount).slice(0, n)
+    const catTotals: Record<string, number> = {}
+    for (const r of allItems) {
+      catTotals[r.category] = (catTotals[r.category] ?? 0) + r.amount
+    }
+    const sortedCats = Object.entries(catTotals)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, n)
+      .map(([cat, total]) => ({ cat, total }))
+    return { topItems: sortedItems, topCategories: sortedCats }
+  }
+
   if (isGuest) {
-    if (queryItems.length > 0) {
+    if (effectiveQueryType === 'top_n') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allInRange = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+        const d = r.created_at.slice(0, 10)
+        return d >= dateFrom && d < dateTo
+      })
+      items = allInRange
+      const result = computeTopN(allInRange, topN)
+      topItems = result.topItems
+      topCategories = result.topCategories
+    }
+    else if (queryItems.length > 0) {
       // 每個 query 獨立過濾
       for (const q of queryItems) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -225,7 +266,25 @@ queryType 規則：
     const { data: { user } } = await client.auth.getUser()
     if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-    if (queryItems.length > 0) {
+    if (effectiveQueryType === 'top_n') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (client as any)
+        .from('expenses')
+        .select('id, name, amount, category, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', dateFrom)
+        .lt('created_at', dateTo)
+        .order('amount', { ascending: false })
+      if (error) {
+        console.error('[query-expenses] top_n 查詢失敗:', error)
+        throw createError({ statusCode: 500, message: error.message })
+      }
+      items = data ?? []
+      const result = computeTopN(items, topN)
+      topItems = result.topItems
+      topCategories = result.topCategories
+    }
+    else if (queryItems.length > 0) {
       // 每個 query 各跑一次 Supabase
       for (const q of queryItems) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -291,6 +350,9 @@ queryType 規則：
     total,
     items,
     groups,
+    topItems,
+    topCategories,
+    n: topN,
     dateFrom,
     dateTo,
   }

@@ -10,7 +10,10 @@
         <div class="cat-icon" :style="{ background: catColor(record.category) }">
           <CatIcon :category="record.category" :size="14" :stroke-width="1.8" />
         </div>
-        <span class="row-name">{{ record.name }}</span>
+        <div class="row-info">
+          <span class="row-name">{{ record.name }}</span>
+          <span class="row-cat">{{ record.category }}</span>
+        </div>
         <span class="row-amount">-{{ record.amount }}</span>
         <button class="row-edit-btn" @click="$emit('edit', i)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -91,9 +94,24 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 }
 
 
+.row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .row-name {
   font-size: 14px;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-cat {
+  font-size: 11px;
+  color: var(--text-soft);
 }
 
 .row-amount {
