@@ -50,19 +50,12 @@
             <!-- Category breakdown -->
             <div class="card-section">
               <div class="section-title">各類別支出</div>
-              <div class="cat-bar-wrap">
-                <div
-                  v-for="cat in categoryData"
-                  :key="cat.cat"
-                  class="cat-bar-seg"
-                  :style="{ flex: cat.amount, background: catColor(cat.cat) }"
-                />
-              </div>
               <div v-for="cat in categoryData" :key="cat.cat" class="cat-row">
                 <div class="cat-icon" :style="{ background: catColor(cat.cat) }">
                   <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
                 </div>
-                <span class="cat-name">{{ cat.cat }} <span class="cat-pct">{{ cat.pct }}%</span></span>
+                <span class="cat-name">{{ cat.cat }}</span>
+                <span class="cat-pct">{{ cat.pct }}%</span>
                 <span class="cat-amount">-{{ formatAmount(cat.amount) }}</span>
               </div>
             </div>
@@ -654,24 +647,10 @@ onMounted(async () => {
   margin-bottom: 12px;
 }
 
-/* Category bar */
-.cat-bar-wrap {
-  display: flex;
-  height: 10px;
-  border-radius: 5px;
-  overflow: hidden;
-  margin-bottom: 14px;
-  gap: 2px;
-}
-
-.cat-bar-seg {
-  min-width: 2px;
-}
-
 /* Category rows */
 .cat-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 28px 1fr auto auto;
   align-items: center;
   gap: 8px;
   padding: 5px 0;
@@ -694,9 +673,10 @@ onMounted(async () => {
 }
 
 .cat-pct {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-soft);
-  margin-left: 4px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .cat-amount {

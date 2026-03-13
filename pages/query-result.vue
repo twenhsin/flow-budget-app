@@ -43,22 +43,15 @@
         </div>
       </template>
 
-      <!-- ranking: horizontal bar chart -->
+      <!-- ranking: category list with percentage -->
       <template v-else-if="result.queryType === 'ranking'">
         <div class="item-card">
           <div v-for="r in rankingData" :key="r.cat" class="rank-row">
-            <div class="rank-label">
-              <div class="item-icon" :style="{ background: catColor(r.cat) }">
-                <CatIcon :category="r.cat" :size="14" :stroke-width="1.8" />
-              </div>
-              <span class="rank-name">{{ r.cat }}</span>
+            <div class="item-icon" :style="{ background: catColor(r.cat) }">
+              <CatIcon :category="r.cat" :size="14" :stroke-width="1.8" />
             </div>
-            <div class="rank-bar-wrap">
-              <div
-                class="rank-bar"
-                :style="{ width: `${r.pct}%`, background: catColor(r.cat) }"
-              />
-            </div>
+            <span class="rank-name">{{ r.cat }}</span>
+            <span class="rank-pct">{{ r.pct }}%</span>
             <span class="rank-amount">{{ formatAmount(r.amount) }}</span>
           </div>
           <div v-if="rankingData.length === 0" class="item-empty">此期間無紀錄</div>
@@ -300,10 +293,10 @@ const rankingData = computed(() => {
   for (const r of result.value.items) {
     totals[r.category] = (totals[r.category] ?? 0) + r.amount
   }
-  const max = Math.max(...Object.values(totals), 1)
+  const total = Object.values(totals).reduce((a, b) => a + b, 0) || 1
   return Object.entries(totals)
     .sort(([, a], [, b]) => b - a)
-    .map(([cat, amount]) => ({ cat, amount, pct: Math.round((amount / max) * 100) }))
+    .map(([cat, amount]) => ({ cat, amount, pct: Math.round((amount / total) * 100) }))
 })
 
 // ── Monthly chart ──────────────────────────────────────────────────────────────
@@ -655,7 +648,8 @@ const monthlyBars = computed(() => {
 
 /* Ranking rows */
 .rank-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 30px 1fr auto auto;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
@@ -665,32 +659,20 @@ const monthlyBars = computed(() => {
   border-top: 1px solid var(--border);
 }
 
-.rank-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 72px;
-  flex-shrink: 0;
-}
-
 .rank-name {
   font-size: 13px;
   color: var(--text);
   white-space: nowrap;
-}
-
-.rank-bar-wrap {
-  flex: 1;
-  height: 8px;
-  background: var(--border);
-  border-radius: 4px;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.rank-bar {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
+.rank-pct {
+  font-size: 11px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .rank-amount {
@@ -699,8 +681,6 @@ const monthlyBars = computed(() => {
   color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  flex-shrink: 0;
-  width: 56px;
   text-align: right;
 }
 
