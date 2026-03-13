@@ -65,11 +65,10 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 }
 
 .table-row {
-  display: grid;
-  grid-template-columns: 36px 1fr auto 44px;
-  padding: 10px 8px 10px 16px;
+  display: flex;
   align-items: center;
   gap: 10px;
+  padding: 10px 8px 10px 14px;
   border-bottom: 1px solid var(--border);
   animation: rowIn 0.25s ease both;
 }
@@ -84,8 +83,8 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 }
 
 .cat-icon {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -95,9 +94,10 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 
 
 .row-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
@@ -116,10 +116,11 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 
 .row-amount {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .row-edit-btn {
