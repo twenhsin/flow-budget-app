@@ -19,9 +19,23 @@
       </div>
 
       <!-- Summary area -->
-      <div v-if="result.queryType !== 'top_n'" class="qr-total">
+      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change'" class="qr-total">
         <span class="qr-total-label">總計</span>
         <span class="qr-total-amount">-{{ formatAmount(result.total) }}</span>
+      </div>
+      <div v-else-if="result.queryType === 'analysis_compare' || result.queryType === 'analysis_category_change'" class="qr-compare-summary">
+        <div class="compare-sum-col">
+          <span class="compare-sum-label">{{ result.currentLabel ?? '本期' }}</span>
+          <span class="compare-sum-amount">-{{ formatAmount(result.total) }}</span>
+        </div>
+        <div class="compare-sum-vs">vs</div>
+        <div class="compare-sum-col">
+          <span class="compare-sum-label">{{ result.previousLabel ?? '上期' }}</span>
+          <span class="compare-sum-amount compare-sum-prev">-{{ formatAmount(result.compareTotal ?? 0) }}</span>
+        </div>
+        <div class="compare-sum-diff" :class="compareDiff >= 0 ? 'change-up' : 'change-down'">
+          {{ compareDiff >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(compareDiff)) }}
+        </div>
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -162,6 +176,75 @@
         </div>
       </template>
 
+      <!-- analysis_trend: weekly bar chart + list -->
+      <template v-else-if="result.queryType === 'analysis_trend'">
+        <div class="item-card chart-card">
+          <svg :viewBox="`0 0 ${SVG_W} ${SVG_H}`" class="monthly-svg">
+            <line v-for="g in trendYGrid" :key="g.chartY" :x1="SVG_L" :y1="g.chartY" :x2="SVG_W - SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
+            <text v-for="g in trendYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="#B0A090">{{ g.label }}</text>
+            <rect v-for="(b, i) in trendBars" :key="i" :x="b.x" :y="b.y" :width="b.w" :height="b.h" rx="2" :fill="b.h > 0 ? '#E07A4F' : 'transparent'" opacity="0.85" />
+            <text v-for="(b, i) in trendBars" :key="'x'+i" :x="b.x + b.w / 2" :y="SVG_H - 3" text-anchor="middle" font-size="7" fill="#B0A090">{{ b.label }}</text>
+          </svg>
+        </div>
+        <div class="item-card" style="margin-top:10px">
+          <div v-for="(week, wi) in (result.analysisWeeks ?? [])" :key="week.from" class="analysis-week-row" :class="{ 'border-top-row': wi > 0 }">
+            <span class="analysis-week-label">{{ week.from.slice(5).replace('-', '/') }} 週</span>
+            <span class="analysis-week-total">-{{ formatAmount(week.total) }}</span>
+          </div>
+          <div v-if="!result.analysisWeeks?.length" class="item-empty">此期間無紀錄</div>
+        </div>
+      </template>
+
+      <!-- analysis_compare / analysis_category_change: category changes -->
+      <template v-else-if="result.queryType === 'analysis_compare' || result.queryType === 'analysis_category_change'">
+        <div class="item-card">
+          <div class="cat-change-header">
+            <span />
+            <span class="cat-change-header-label">{{ result.previousLabel ?? '上期' }}</span>
+            <span />
+            <span class="cat-change-header-label">{{ result.currentLabel ?? '本期' }}</span>
+          </div>
+          <div class="topn-title-divider" />
+          <div v-for="(c, ci) in (result.analysisCategoryChanges ?? [])" :key="c.cat" class="cat-change-row" :class="{ 'border-top-row': ci > 0 }">
+            <div class="item-icon" :style="{ background: catColor(c.cat) }">
+              <CatIcon :category="c.cat" :size="14" :stroke-width="1.8" />
+            </div>
+            <span class="cat-change-name">{{ c.cat }}</span>
+            <span class="cat-change-prev">{{ formatAmount(c.prev) }}</span>
+            <span :class="['cat-change-indicator', c.diff > 0 ? 'change-up' : c.diff < 0 ? 'change-down' : 'change-same']">
+              {{ c.diff > 0 ? '↑' : c.diff < 0 ? '↓' : '—' }}
+            </span>
+            <span class="cat-change-curr">{{ formatAmount(c.current) }}</span>
+          </div>
+          <div v-if="!result.analysisCategoryChanges?.length" class="item-empty">此期間無紀錄</div>
+        </div>
+      </template>
+
+      <!-- analysis_peak: peak/valley day + daily bar chart -->
+      <template v-else-if="result.queryType === 'analysis_peak'">
+        <div class="item-card">
+          <div v-if="result.analysisPeakDay" class="peak-row">
+            <div class="peak-badge peak-badge-high">高峰</div>
+            <span class="peak-date">{{ result.analysisPeakDay.date.replace(/-/g, '/') }}</span>
+            <span class="peak-amount">-{{ formatAmount(result.analysisPeakDay.total) }}</span>
+          </div>
+          <div v-if="result.analysisValleyDay" class="peak-row border-top-row">
+            <div class="peak-badge peak-badge-low">低谷</div>
+            <span class="peak-date">{{ result.analysisValleyDay.date.replace(/-/g, '/') }}</span>
+            <span class="peak-amount">-{{ formatAmount(result.analysisValleyDay.total) }}</span>
+          </div>
+          <div v-if="!result.analysisPeakDay" class="item-empty">此期間無紀錄</div>
+        </div>
+        <div class="item-card chart-card" style="margin-top:10px">
+          <svg :viewBox="`0 0 ${SVG_W} ${SVG_H}`" class="monthly-svg">
+            <line v-for="g in peakYGrid" :key="g.chartY" :x1="SVG_L" :y1="g.chartY" :x2="SVG_W - SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
+            <text v-for="g in peakYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="#B0A090">{{ g.label }}</text>
+            <rect v-for="(b, i) in peakDayBars" :key="i" :x="b.x" :y="b.y" :width="b.w" :height="b.h" rx="2" :fill="b.isPeak ? '#E07A4F' : (b.isValley ? '#90C8A0' : 'rgba(224,122,79,0.35)')" />
+            <text v-for="(b, i) in peakDayBars" v-show="b.label" :key="'x'+i" :x="b.x + b.w / 2" :y="SVG_H - 3" text-anchor="middle" font-size="7" fill="#B0A090">{{ b.label }}</text>
+          </svg>
+        </div>
+      </template>
+
       <!-- monthly: vertical bar chart (SVG) -->
       <template v-else-if="result.queryType === 'monthly'">
         <div class="item-card chart-card">
@@ -273,6 +356,7 @@ interface GroupEntry {
 interface QueryResult {
   title: string
   queryType: 'total' | 'list' | 'ranking' | 'monthly' | 'grouped' | 'top_n'
+    | 'analysis_trend' | 'analysis_compare' | 'analysis_peak' | 'analysis_category_change'
   total: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: any[]
@@ -285,6 +369,16 @@ interface QueryResult {
   n?: number
   dateFrom: string
   dateTo: string
+  compareFrom?: string
+  compareTo?: string
+  currentLabel?: string
+  previousLabel?: string
+  compareTotal?: number
+  analysisWeeks?: { label: string; total: number; from: string; to: string }[]
+  analysisDays?: { date: string; total: number }[]
+  analysisPeakDay?: { date: string; total: number } | null
+  analysisValleyDay?: { date: string; total: number } | null
+  analysisCategoryChanges?: { cat: string; current: number; prev: number; diff: number }[]
 }
 
 const result = useState<QueryResult>('queryResult', () => ({
@@ -402,6 +496,78 @@ const topCatSectionLabel = computed(() =>
     ? result.value.topCategories[0].cat
     : '分類項目',
 )
+
+// ── Analysis ───────────────────────────────────────────────────────────────────
+const compareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
+
+// Trend chart
+const trendNiceMax = computed(() => {
+  const max = Math.max(...(result.value.analysisWeeks ?? []).map(w => w.total), 1)
+  if (max < 1000) return Math.ceil(max / 200) * 200
+  if (max < 10000) return Math.ceil(max / 1000) * 1000
+  return Math.ceil(max / 10000) * 10000
+})
+const trendYGrid = computed(() => {
+  const max = trendNiceMax.value
+  return [0, 1, 2, 3, 4].map((i) => {
+    const ratio = i / 4
+    const val = Math.round(max * (1 - ratio))
+    const chartY = SVG_T + ratio * SVG_CH
+    return { chartY, label: formatYLabel(val) }
+  })
+})
+const trendBars = computed(() => {
+  const data = result.value.analysisWeeks ?? []
+  const n = data.length
+  if (n === 0) return []
+  const max = trendNiceMax.value
+  const chartW = SVG_W - SVG_L - SVG_R
+  const barW = Math.min((chartW / n) * 0.6, 28)
+  const gap = chartW / n
+  return data.map((w, i) => {
+    const barH = max > 0 ? (w.total / max) * SVG_CH : 0
+    const x = SVG_L + gap * i + (gap - barW) / 2
+    const y = SVG_T + SVG_CH - barH
+    return { x, y, w: barW, h: barH, label: w.label.replace('-', '/') }
+  })
+})
+
+// Peak chart
+const peakNiceMax = computed(() => {
+  const max = Math.max(...(result.value.analysisDays ?? []).map(d => d.total), 1)
+  if (max < 1000) return Math.ceil(max / 200) * 200
+  if (max < 10000) return Math.ceil(max / 1000) * 1000
+  return Math.ceil(max / 10000) * 10000
+})
+const peakYGrid = computed(() => {
+  const max = peakNiceMax.value
+  return [0, 1, 2, 3, 4].map((i) => {
+    const ratio = i / 4
+    const val = Math.round(max * (1 - ratio))
+    const chartY = SVG_T + ratio * SVG_CH
+    return { chartY, label: formatYLabel(val) }
+  })
+})
+const peakDayBars = computed(() => {
+  const data = result.value.analysisDays ?? []
+  const n = data.length
+  if (n === 0) return []
+  const peakDate = result.value.analysisPeakDay?.date ?? ''
+  const valleyDate = result.value.analysisValleyDay?.date ?? ''
+  const max = peakNiceMax.value
+  const chartW = SVG_W - SVG_L - SVG_R
+  const barW = Math.min((chartW / n) * 0.8, 16)
+  const gap = chartW / n
+  return data.map((d, i) => {
+    const barH = max > 0 ? (d.total / max) * SVG_CH : 0
+    const x = SVG_L + gap * i + (gap - barW) / 2
+    const y = SVG_T + SVG_CH - barH
+    const isPeak = d.date === peakDate
+    const isValley = d.date === valleyDate && valleyDate !== peakDate
+    const label = isPeak || isValley ? d.date.slice(8) : ''
+    return { x, y, w: barW, h: barH, label, isPeak, isValley }
+  })
+})
 
 // ── Ranking data ───────────────────────────────────────────────────────────────
 const rankingData = computed(() => {
@@ -925,6 +1091,185 @@ const monthlyBars = computed(() => {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* Compare summary */
+.qr-compare-summary {
+  flex-shrink: 0;
+  padding: 24px 24px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.compare-sum-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compare-sum-label {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.compare-sum-amount {
+  font-family: 'Chivo Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
+  color: #8B5E3C;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-sum-prev {
+  color: #B0A090;
+}
+
+.compare-sum-vs {
+  font-size: 12px;
+  color: var(--text-soft);
+  flex-shrink: 0;
+}
+
+.compare-sum-diff {
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Change indicators */
+.change-up {
+  color: #E05050;
+}
+.change-down {
+  color: #50A070;
+}
+.change-same {
+  color: var(--text-soft);
+}
+
+/* border helper */
+.border-top-row {
+  border-top: 1px solid var(--border);
+}
+
+/* Analysis week list */
+.analysis-week-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+
+.analysis-week-label {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.analysis-week-total {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Category changes */
+.cat-change-header {
+  display: grid;
+  grid-template-columns: 30px 1fr auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+}
+
+.cat-change-header-label {
+  font-size: 11px;
+  color: var(--text-soft);
+  text-align: right;
+}
+
+.cat-change-row {
+  display: grid;
+  grid-template-columns: 30px 1fr auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.cat-change-name {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-change-prev {
+  font-size: 12px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cat-change-indicator {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.cat-change-curr {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Peak rows */
+.peak-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.peak-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.peak-badge-high {
+  background: rgba(224, 122, 79, 0.15);
+  color: #E07A4F;
+}
+
+.peak-badge-low {
+  background: rgba(80, 160, 112, 0.12);
+  color: #50A070;
+}
+
+.peak-date {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.peak-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Bottom input */

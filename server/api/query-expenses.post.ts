@@ -83,11 +83,15 @@ ${dateHints}
 {
   "dateFrom": "YYYY-MM-DD",
   "dateTo": "YYYY-MM-DD",
+  "compareFrom": "YYYY-MM-DD（比較類分析時填前期起始，否則省略此欄）",
+  "compareTo": "YYYY-MM-DD（比較類分析時填前期結束，否則省略此欄）",
+  "currentLabel": "本月（本期時間描述，比較類分析時使用）",
+  "previousLabel": "上月（前期時間描述，比較類分析時使用）",
   "queries": [
     { "type": "category", "value": "類別名稱" },
     { "type": "nameKeyword", "value": "品項關鍵字", "expandedKeywords": ["原始詞", "同義詞1", "變體2"] }
   ],
-  "queryType": "total | list | ranking | monthly | grouped | top_n",
+  "queryType": "total | list | ranking | monthly | grouped | top_n | analysis_trend | analysis_compare | analysis_peak | analysis_category_change",
   "n": 3,
   "title": "精確的繁體中文結果頁標題"
 }
@@ -133,6 +137,10 @@ queryType 規則（請嚴格遵守，優先順序由上到下）：
 - total：問總金額、花多少、共花了多少
 - list：問明細、有哪些、列出所有紀錄
 - monthly：問逐月、每個月、各月比較、月趨勢
+- analysis_trend：用於「每週消費趨勢」、「各週花多少」、「週消費變化」等以週為單位的趨勢分析
+- analysis_compare：用於「這個月和上個月比」、「本月 vs 上月」、「與上期比較」等跨期總額比較。需填 compareFrom/compareTo（前期日期範圍）、currentLabel/previousLabel（各期名稱）
+- analysis_peak：用於「哪天消費最高」、「消費高峰日」、「最多花了哪天」等單日高低峰分析
+- analysis_category_change：用於「類別消費有沒有變化」、「哪個類別增加最多」、「各類別這個月比上個月」等類別跨期變化分析。需填 compareFrom/compareTo、currentLabel/previousLabel
 - grouped：queries 有多項時優先使用，每個 query 各自成一組
 
 n 規則（僅 top_n 時有效）：
@@ -145,10 +153,16 @@ title 補充規則（top_n 時）：
   例：「本月 <span class="title-keyword">最高消費</span>」
 - n>1 格式：時間詞 + 「 前 」+ <span class="title-keyword">N中文</span> + 「 項消費」
   例：「本月 前 <span class="title-keyword">三</span> 項消費」
-- N 以中文數字表示（1→一, 2→二, 3→三, 4→四, 5→五...）`,
+- N 以中文數字表示（1→一, 2→二, 3→三, 4→四, 5→五...）
+
+title 補充規則（analysis 時）：
+- analysis_trend：時間詞 + 「消費週趨勢」，例：「本月消費週趨勢」
+- analysis_compare：currentLabel + 「 vs 」 + previousLabel + 「消費比較」，例：「本月 vs 上月消費比較」
+- analysis_peak：時間詞 + 「消費高峰日」，例：「本月消費高峰日」
+- analysis_category_change：時間詞 + 「各類別消費變化」，例：「本月各類別消費變化」`,
       },
     ],
-    max_tokens: 600,
+    max_tokens: 800,
   }
 
   let gptResponse: Response
@@ -208,9 +222,22 @@ title 補充規則（top_n 時）：
   dateToExclusive.setDate(dateToExclusive.getDate() + 1)
   const dateTo = dateToExclusive.toISOString().slice(0, 10)
 
+  // Analysis compare fields
+  const compareFrom: string | undefined = parsed.compareFrom || undefined
+  const compareTo: string | undefined = parsed.compareTo || undefined
+  const currentLabel: string = parsed.currentLabel ?? '本期'
+  const previousLabel: string = parsed.previousLabel ?? '上期'
+  let compareToDate: string | undefined
+  if (compareFrom && compareTo) {
+    const compareToEx = new Date(compareTo)
+    compareToEx.setDate(compareToEx.getDate() + 1)
+    compareToDate = compareToEx.toISOString().slice(0, 10)
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryItems: { type: string; value: string; expandedKeywords?: string[] }[] = Array.isArray(parsed.queries) ? parsed.queries : []
-  const effectiveQueryType = queryType === 'top_n' ? 'top_n' : (queryItems.length > 1 ? 'grouped' : queryType)
+  const isAnalysisType = typeof queryType === 'string' && queryType.startsWith('analysis_')
+  const effectiveQueryType = (queryType === 'top_n' || isAnalysisType) ? queryType : (queryItems.length > 1 ? 'grouped' : queryType)
 
   console.log('[query-expenses] GPT parsed:', JSON.stringify({ dateFrom, dateTo, queryItems, queryType: effectiveQueryType, title }))
 
@@ -224,9 +251,58 @@ title 補充規則（top_n 時）：
   let topCategories: { cat: string; total: number }[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let topCategoryItems: any[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let compareItems: any[] = []
+  let analysisWeeks: { label: string; total: number; from: string; to: string }[] = []
+  let analysisDays: { date: string; total: number }[] = []
+  let analysisPeakDay: { date: string; total: number } | null = null
+  let analysisValleyDay: { date: string; total: number } | null = null
+  let analysisCategoryChanges: { cat: string; current: number; prev: number; diff: number }[] = []
+  let compareTotal = 0
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groupByWeeks = (allItems: any[]) => {
+    const weeks: Record<string, { items: any[]; from: string; to: string }> = {}
+    for (const item of allItems) {
+      const d = new Date(item.created_at)
+      const dow = d.getDay()
+      const monday = new Date(d)
+      monday.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1))
+      const key = fmtDate(monday)
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      if (!weeks[key]) weeks[key] = { items: [], from: fmtDate(monday), to: fmtDate(sunday) }
+      weeks[key].items.push(item)
+    }
+    return Object.entries(weeks).sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => ({
+      label: v.from.slice(5),
+      from: v.from,
+      to: v.to,
+      total: sumAmount(v.items),
+    }))
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groupByDays = (allItems: any[]) => {
+    const days: Record<string, number> = {}
+    for (const item of allItems) {
+      const key = item.created_at.slice(0, 10)
+      days[key] = (days[key] ?? 0) + item.amount
+    }
+    return Object.entries(days).sort(([a], [b]) => a.localeCompare(b)).map(([date, total]) => ({ date, total }))
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groupByCat = (allItems: any[]) => {
+    const totals: Record<string, number> = {}
+    for (const item of allItems) {
+      totals[item.category] = (totals[item.category] ?? 0) + item.amount
+    }
+    return totals
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const computeTopN = (allItems: any[], n: number) => {
@@ -263,6 +339,20 @@ title 補充規則（top_n 時）：
       topItems = result.topItems
       topCategories = result.topCategories
       topCategoryItems = result.topCategoryItems
+    }
+    else if (isAnalysisType) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      items = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+        const d = r.created_at.slice(0, 10)
+        return d >= dateFrom && d < dateTo
+      })
+      if (compareFrom && compareToDate) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        compareItems = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+          const d = r.created_at.slice(0, 10)
+          return d >= compareFrom && d < compareToDate!
+        })
+      }
     }
     else if (queryItems.length > 0) {
       // 每個 query 獨立過濾
@@ -323,6 +413,33 @@ title 補充規則（top_n 時）：
       topCategories = result.topCategories
       topCategoryItems = result.topCategoryItems
     }
+    else if (isAnalysisType) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (client as any)
+        .from('expenses')
+        .select('id, name, amount, category, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', dateFrom)
+        .lt('created_at', dateTo)
+        .order('created_at', { ascending: true })
+      if (error) {
+        console.error('[query-expenses] analysis 查詢失敗:', error)
+        throw createError({ statusCode: 500, message: error.message })
+      }
+      items = data ?? []
+      if (compareFrom && compareToDate) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: cData, error: cError } = await (client as any)
+          .from('expenses')
+          .select('id, name, amount, category, created_at')
+          .eq('user_id', user.id)
+          .gte('created_at', compareFrom)
+          .lt('created_at', compareToDate)
+          .order('created_at', { ascending: true })
+        if (cError) console.error('[query-expenses] compare 查詢失敗:', cError)
+        compareItems = cData ?? []
+      }
+    }
     else if (queryItems.length > 0) {
       // 每個 query 各跑一次 Supabase
       for (const q of queryItems) {
@@ -378,6 +495,33 @@ title 補充規則（top_n 時）：
 
   const total: number = sumAmount(items)
 
+  // Step 2b — Analysis computations
+  if (isAnalysisType) {
+    if (effectiveQueryType === 'analysis_trend') {
+      analysisWeeks = groupByWeeks(items)
+    }
+    else if (effectiveQueryType === 'analysis_peak') {
+      analysisDays = groupByDays(items)
+      if (analysisDays.length > 0) {
+        analysisPeakDay = analysisDays.reduce((a, b) => a.total > b.total ? a : b)
+        const nonZero = analysisDays.filter(d => d.total > 0)
+        if (nonZero.length > 0) analysisValleyDay = nonZero.reduce((a, b) => a.total < b.total ? a : b)
+      }
+    }
+    else if (effectiveQueryType === 'analysis_compare' || effectiveQueryType === 'analysis_category_change') {
+      compareTotal = sumAmount(compareItems)
+      const currentCats = groupByCat(items)
+      const prevCats = groupByCat(compareItems)
+      const allCats = new Set([...Object.keys(currentCats), ...Object.keys(prevCats)])
+      analysisCategoryChanges = [...allCats].map(cat => ({
+        cat,
+        current: currentCats[cat] ?? 0,
+        prev: prevCats[cat] ?? 0,
+        diff: (currentCats[cat] ?? 0) - (prevCats[cat] ?? 0),
+      })).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+    }
+  }
+
   // Step 3 — 回傳結果
   console.log('[query-expenses] 回傳 response:', JSON.stringify({
     effectiveQueryType,
@@ -398,5 +542,15 @@ title 補充規則（top_n 時）：
     n: topN,
     dateFrom,
     dateTo,
+    compareFrom,
+    compareTo,
+    currentLabel,
+    previousLabel,
+    compareTotal,
+    analysisWeeks,
+    analysisDays,
+    analysisPeakDay,
+    analysisValleyDay,
+    analysisCategoryChanges,
   }
 })
