@@ -120,20 +120,20 @@
           <!-- Legend: only for multi-keyword -->
           <div v-if="(result.fullItems ?? []).filter(fi => fi.keywordTotal > 0).length > 1" class="af-legend">
             <div v-for="fi in (result.fullItems ?? []).filter(fi => fi.keywordTotal > 0)" :key="fi.keyword" class="af-legend-item">
-              <span class="af-legend-dot" :style="{ background: catColor(fi.keyword) }"></span>
+              <span class="af-legend-dot" :style="{ background: catColor(fi.keywordCategory || fi.keyword) }"></span>
               <span>{{ fi.keyword }}</span>
             </div>
           </div>
           <!-- SVG trend chart -->
           <svg :viewBox="`0 0 ${AF_SVG_W} ${AF_SVG_H}`" class="af-trend-svg">
             <line v-for="g in afYGrid" :key="g.chartY" :x1="AF_SVG_L" :y1="g.chartY" :x2="AF_SVG_W - AF_SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
-            <text v-for="g in afYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="#B0A090">{{ g.label }}</text>
+            <text v-for="g in afYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="var(--text-soft)">{{ g.label }}</text>
             <template v-for="fi in (result.fullItems ?? []).filter(fi => (fi.trendData?.length ?? 0) > 0)" :key="fi.keyword">
-              <polygon :points="afAreaStr(fi.trendData ?? [])" :fill="catColor(fi.keyword)" opacity="0.12" />
-              <polyline :points="afLineStr(fi.trendData ?? [])" fill="none" :stroke="catColor(fi.keyword)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              <circle v-for="(pt, pIdx) in afGetPoints(fi.trendData ?? [])" :key="pIdx" :cx="pt.x" :cy="pt.y" r="2.5" :fill="catColor(fi.keyword)" />
+              <polygon :points="afAreaStr(fi.trendData ?? [])" :fill="catColor(fi.keywordCategory || fi.keyword)" opacity="0.12" />
+              <polyline :points="afLineStr(fi.trendData ?? [])" fill="none" :stroke="catColor(fi.keywordCategory || fi.keyword)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <circle v-for="(pt, pIdx) in afGetPoints(fi.trendData ?? [])" :key="pIdx" :cx="pt.x" :cy="pt.y" r="2.5" :fill="catColor(fi.keywordCategory || fi.keyword)" />
             </template>
-            <text v-for="(label, lIdx) in afXLabels" :key="'x'+lIdx" :x="AF_SVG_L + (afXLabels.length > 1 ? (lIdx / (afXLabels.length - 1)) * AF_SVG_CW : AF_SVG_CW / 2)" :y="AF_SVG_H - 3" text-anchor="middle" font-size="8" fill="#B0A090">{{ label }}</text>
+            <text v-for="(label, lIdx) in afXLabels" :key="'x'+lIdx" :x="AF_SVG_L + (afXLabels.length > 1 ? (lIdx / (afXLabels.length - 1)) * AF_SVG_CW : AF_SVG_CW / 2)" :y="AF_SVG_H - 3" text-anchor="middle" font-size="8" fill="var(--text-soft)">{{ label }}</text>
           </svg>
           <!-- Compare text per keyword -->
           <div v-for="fi in (result.fullItems ?? []).filter(fi => fi.keywordTotal > 0)" :key="'cmp'+fi.keyword" class="af-compare-text-row">
