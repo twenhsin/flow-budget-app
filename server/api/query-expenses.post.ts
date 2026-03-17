@@ -274,6 +274,8 @@ title 補充規則（analysis 時）：
   let grandTotal = 0
   let ratioOfGrand = 0
   let ratioOfCategory = 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let ratioItems: { keyword: string; keywordTotal: number; keywordCategory: string; categoryTotal: number; grandTotal: number; ratioOfGrand: number; ratioOfCategory: number; items: any[] }[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
@@ -356,28 +358,39 @@ title 補充規則（analysis 時）：
       topCategoryItems = result.topCategoryItems
     }
     else if (effectiveQueryType === 'analysis_ratio') {
-      const q = queryItems[0]
-      if (q) {
-        keyword = q.value
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allInRange = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+        const d = r.created_at.slice(0, 10)
+        return d >= dateFrom && d < dateTo
+      })
+      grandTotal = sumAmount(allInRange)
+      for (const q of queryItems) {
         const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q.value]
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allInRange = (guestExpenses as any[]).filter((r: { created_at: string }) => {
-          const d = r.created_at.slice(0, 10)
-          return d >= dateFrom && d < dateTo
-        })
-        grandTotal = sumAmount(allInRange)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items = allInRange.filter((r: any) => {
+        const kItems = allInRange.filter((r: any) => {
           if (q.type === 'category') return r.category === q.value
           return kws.some((kw: string) => r.name.toLowerCase().includes(kw.toLowerCase()))
         })
-        if (items.length > 0) {
+        const kTotal = sumAmount(kItems)
+        let kCategory = ''
+        let kCategoryTotal = 0
+        if (kItems.length > 0) {
           const catCounts: Record<string, number> = {}
-          for (const r of items) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
-          keywordCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
+          for (const r of kItems) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
+          kCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          categoryTotal = sumAmount(allInRange.filter((r: any) => r.category === keywordCategory))
+          kCategoryTotal = sumAmount(allInRange.filter((r: any) => r.category === kCategory))
         }
+        ratioItems.push({
+          keyword: q.value,
+          keywordTotal: kTotal,
+          keywordCategory: kCategory,
+          categoryTotal: kCategoryTotal,
+          grandTotal,
+          ratioOfGrand: grandTotal > 0 ? Math.round((kTotal / grandTotal) * 1000) / 10 : 0,
+          ratioOfCategory: kCategoryTotal > 0 ? Math.round((kTotal / kCategoryTotal) * 1000) / 10 : 0,
+          items: kItems,
+        })
       }
     }
     else if (isAnalysisType) {
@@ -454,11 +467,17 @@ title 補充規則（analysis 時）：
       topCategoryItems = result.topCategoryItems
     }
     else if (effectiveQueryType === 'analysis_ratio') {
-      const q = queryItems[0]
-      if (q) {
-        keyword = q.value
+      // Grand total (query once)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: allData } = await (client as any)
+        .from('expenses')
+        .select('amount')
+        .eq('user_id', user.id)
+        .gte('created_at', dateFrom)
+        .lt('created_at', dateTo)
+      grandTotal = sumAmount(allData ?? [])
+      for (const q of queryItems) {
         const kws: string[] = Array.isArray(q.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q.value]
-        // Keyword items
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let kQuery = (client as any)
           .from('expenses')
@@ -474,31 +493,34 @@ title 補充規則（analysis 時）：
         }
         const { data: kData, error: kError } = await kQuery.order('created_at', { ascending: false })
         if (kError) console.error('[query-expenses] ratio keyword 查詢失敗:', kError)
-        items = kData ?? []
-        // Grand total
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: allData } = await (client as any)
-          .from('expenses')
-          .select('amount')
-          .eq('user_id', user.id)
-          .gte('created_at', dateFrom)
-          .lt('created_at', dateTo)
-        grandTotal = sumAmount(allData ?? [])
-        // Category total (detected from keyword items)
-        if (items.length > 0) {
+        const kItems = kData ?? []
+        const kTotal = sumAmount(kItems)
+        let kCategory = ''
+        let kCategoryTotal = 0
+        if (kItems.length > 0) {
           const catCounts: Record<string, number> = {}
-          for (const r of items) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
-          keywordCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
+          for (const r of kItems) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
+          kCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: catData } = await (client as any)
             .from('expenses')
             .select('amount')
             .eq('user_id', user.id)
-            .eq('category', keywordCategory)
+            .eq('category', kCategory)
             .gte('created_at', dateFrom)
             .lt('created_at', dateTo)
-          categoryTotal = sumAmount(catData ?? [])
+          kCategoryTotal = sumAmount(catData ?? [])
         }
+        ratioItems.push({
+          keyword: q.value,
+          keywordTotal: kTotal,
+          keywordCategory: kCategory,
+          categoryTotal: kCategoryTotal,
+          grandTotal,
+          ratioOfGrand: grandTotal > 0 ? Math.round((kTotal / grandTotal) * 1000) / 10 : 0,
+          ratioOfCategory: kCategoryTotal > 0 ? Math.round((kTotal / kCategoryTotal) * 1000) / 10 : 0,
+          items: kItems,
+        })
       }
     }
     else if (isAnalysisType) {
@@ -608,10 +630,6 @@ title 補充規則（analysis 時）：
         diff: (currentCats[cat] ?? 0) - (prevCats[cat] ?? 0),
       })).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
     }
-    else if (effectiveQueryType === 'analysis_ratio') {
-      ratioOfGrand = grandTotal > 0 ? Math.round((total / grandTotal) * 1000) / 10 : 0
-      ratioOfCategory = categoryTotal > 0 ? Math.round((total / categoryTotal) * 1000) / 10 : 0
-    }
   }
 
   // Step 3 — 回傳結果
@@ -651,5 +669,6 @@ title 補充規則（analysis 時）：
     grandTotal,
     ratioOfGrand,
     ratioOfCategory,
+    ratioItems,
   }
 })

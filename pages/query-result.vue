@@ -38,29 +38,41 @@
         </div>
       </div>
       <div v-else-if="result.queryType === 'analysis_ratio'" class="qr-ratio-summary">
-        <div class="ratio-block">
-          <div class="ratio-block-header">
-            <span class="ratio-block-label">總消費佔比</span>
-            <span class="ratio-block-pct">{{ result.ratioOfGrand ?? 0 }}%</span>
+        <template v-for="(ri, idx) in (result.ratioItems ?? [])" :key="ri.keyword">
+          <div :class="['ratio-keyword-group', idx > 0 ? 'ratio-keyword-gap' : '']">
+            <template v-if="ri.keywordTotal === 0">
+              <div class="ratio-no-data">{{ ri.keyword }}：本期無此消費</div>
+            </template>
+            <template v-else>
+              <div class="ratio-block">
+                <div class="ratio-block-header">
+                  <span class="ratio-block-label">總消費佔比</span>
+                  <span class="ratio-block-pct">{{ ri.ratioOfGrand }}%</span>
+                </div>
+                <div class="ratio-bar-bg">
+                  <div class="ratio-bar-fill" :style="{ width: Math.min(ri.ratioOfGrand, 100) + '%' }" />
+                </div>
+                <div class="ratio-stats-row">
+                  <span class="ratio-stat">總消費：{{ formatAmount(ri.grandTotal) }}</span>
+                  <span class="ratio-stat">{{ ri.keyword }}消費：{{ formatAmount(ri.keywordTotal) }}</span>
+                </div>
+              </div>
+              <div v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-block ratio-block-gap">
+                <div class="ratio-block-header">
+                  <span class="ratio-block-label">{{ ri.keywordCategory }}消費佔比</span>
+                  <span class="ratio-block-pct">{{ ri.ratioOfCategory }}%</span>
+                </div>
+                <div class="ratio-bar-bg">
+                  <div class="ratio-bar-fill" :style="{ width: Math.min(ri.ratioOfCategory, 100) + '%' }" />
+                </div>
+                <div class="ratio-stats-row">
+                  <span class="ratio-stat">{{ ri.keywordCategory }}消費：{{ formatAmount(ri.categoryTotal) }}</span>
+                  <span class="ratio-stat">{{ ri.keyword }}消費：{{ formatAmount(ri.keywordTotal) }}</span>
+                </div>
+              </div>
+            </template>
           </div>
-          <div class="ratio-bar-bg">
-            <div class="ratio-bar-fill" :style="{ width: Math.min(result.ratioOfGrand ?? 0, 100) + '%' }" />
-          </div>
-        </div>
-        <div v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-block ratio-block-gap">
-          <div class="ratio-block-header">
-            <span class="ratio-block-label">{{ result.keywordCategory }}消費佔比</span>
-            <span class="ratio-block-pct">{{ result.ratioOfCategory ?? 0 }}%</span>
-          </div>
-          <div class="ratio-bar-bg">
-            <div class="ratio-bar-fill" :style="{ width: Math.min(result.ratioOfCategory ?? 0, 100) + '%' }" />
-          </div>
-        </div>
-        <div class="ratio-stats-row">
-          <span class="ratio-stat">總消費：{{ formatAmount(result.grandTotal ?? 0) }}</span>
-          <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}：{{ formatAmount(result.categoryTotal ?? 0) }}</span>
-          <span class="ratio-stat">{{ result.keyword }}：{{ formatAmount(result.total) }}</span>
-        </div>
+        </template>
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -203,8 +215,18 @@
 
       <!-- analysis_ratio: keyword item detail list -->
       <template v-else-if="result.queryType === 'analysis_ratio'">
-        <div class="item-card">
-          <div v-for="item in result.items" :key="item.id" class="item-row">
+        <div
+          v-for="(ri, idx) in (result.ratioItems ?? [])"
+          :key="ri.keyword"
+          class="item-card"
+          :class="{ 'ratio-list-gap': idx > 0 }"
+        >
+          <div class="group-header">
+            <span class="group-label">{{ ri.keyword }}</span>
+            <span class="group-total">{{ ri.keywordTotal > 0 ? '-' + formatAmount(ri.keywordTotal) : '—' }}</span>
+          </div>
+          <div class="group-divider" />
+          <div v-for="item in ri.items" :key="item.id" class="item-row">
             <div class="item-icon" :style="{ background: catColor(item.category) }">
               <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
             </div>
@@ -214,7 +236,7 @@
             </div>
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
-          <div v-if="result.items.length === 0" class="item-empty">此期間無紀錄</div>
+          <div v-if="ri.items.length === 0" class="item-empty">本期無此消費</div>
         </div>
       </template>
 
@@ -428,6 +450,17 @@ interface QueryResult {
   grandTotal?: number
   ratioOfGrand?: number
   ratioOfCategory?: number
+  ratioItems?: {
+    keyword: string
+    keywordTotal: number
+    keywordCategory: string
+    categoryTotal: number
+    grandTotal: number
+    ratioOfGrand: number
+    ratioOfCategory: number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items: any[]
+  }[]
 }
 
 const result = useState<QueryResult>('queryResult', () => ({
@@ -1145,24 +1178,34 @@ const monthlyBars = computed(() => {
 /* Ratio summary */
 .qr-ratio-summary {
   flex-shrink: 0;
-  padding: 20px 24px 4px;
+  padding: 24px 24px 24px;
   position: relative;
   z-index: 1;
 }
 
+.ratio-keyword-gap {
+  margin-top: 24px;
+}
+
+.ratio-no-data {
+  font-size: 13px;
+  color: var(--text-soft);
+  padding: 4px 0;
+}
+
 .ratio-block {
-  margin-bottom: 16px;
+  /* spacing handled by children */
 }
 
 .ratio-block-gap {
-  margin-top: 4px;
+  margin-top: 16px;
 }
 
 .ratio-block-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .ratio-block-label {
@@ -1195,6 +1238,10 @@ const monthlyBars = computed(() => {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ratio-list-gap {
   margin-top: 10px;
 }
 
