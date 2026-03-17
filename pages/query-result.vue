@@ -64,17 +64,17 @@
                   ></div>
                 </div>
                 <div class="ratio-stats-row">
-                  <span class="ratio-stat">總消費：{{ formatAmount(ri.grandTotal) }}</span>
+                  <span class="ratio-stat">總消費：<span style="font-weight:600">{{ formatAmount(ri.grandTotal) }}</span></span>
                   <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-stat">
-                    <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(ri.keywordCategory) }"></span>{{ ri.keywordCategory }}：{{ formatAmount(ri.categoryTotal) }}
+                    <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(ri.keywordCategory) }"></span>{{ ri.keywordCategory }}：<span style="font-weight:600">{{ formatAmount(ri.categoryTotal) }}</span>
                   </span>
                   <span class="ratio-stat">
-                    <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ ri.keyword }}：{{ formatAmount(ri.keywordTotal) }}
+                    <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ ri.keyword }}：<span style="font-weight:600">{{ formatAmount(ri.keywordTotal) }}</span>
                   </span>
                 </div>
                 <div class="ratio-stats-row">
-                  <span class="ratio-stat">總消費佔比：{{ ri.ratioOfGrand }}%</span>
-                  <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-stat">{{ ri.keywordCategory }}佔比：{{ ri.ratioOfCategory }}%</span>
+                  <span class="ratio-stat">總消費佔比：<span style="font-weight:600">{{ ri.ratioOfGrand }}%</span></span>
+                  <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-stat">{{ ri.keywordCategory }}佔比：<span style="font-weight:600">{{ ri.ratioOfCategory }}%</span></span>
                 </div>
               </div>
             </template>
@@ -1287,7 +1287,6 @@ const monthlyBars = computed(() => {
 
 .ratio-stat {
   font-size: 11px;
-  font-weight: 600;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
