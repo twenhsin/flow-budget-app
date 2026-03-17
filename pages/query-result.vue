@@ -46,28 +46,35 @@
             <template v-else>
               <div class="ratio-block">
                 <div class="ratio-block-header">
-                  <span class="ratio-block-label">總消費佔比</span>
-                  <span class="ratio-block-pct">{{ ri.ratioOfGrand }}%</span>
+                  <span class="ratio-block-label">{{ ri.keyword }}佔比</span>
                 </div>
-                <div class="ratio-bar-bg">
-                  <div class="ratio-bar-fill" :style="{ width: Math.min(ri.ratioOfGrand, 100) + '%' }" />
+                <div class="ratio-bar-wrap">
+                  <div class="ratio-bar-base"></div>
+                  <div
+                    v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword"
+                    class="ratio-bar-mid"
+                    :style="{
+                      width: Math.min(ri.grandTotal > 0 ? ri.categoryTotal / ri.grandTotal * 100 : 0, 100) + '%',
+                      background: catColor(ri.keywordCategory)
+                    }"
+                  ></div>
+                  <div
+                    class="ratio-bar-front"
+                    :style="{ width: Math.min(ri.ratioOfGrand, 100) + '%' }"
+                  ></div>
                 </div>
                 <div class="ratio-stats-row">
                   <span class="ratio-stat">總消費：{{ formatAmount(ri.grandTotal) }}</span>
-                  <span class="ratio-stat">{{ ri.keyword }}消費：{{ formatAmount(ri.keywordTotal) }}</span>
-                </div>
-              </div>
-              <div v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-block ratio-block-gap">
-                <div class="ratio-block-header">
-                  <span class="ratio-block-label">{{ ri.keywordCategory }}消費佔比</span>
-                  <span class="ratio-block-pct">{{ ri.ratioOfCategory }}%</span>
-                </div>
-                <div class="ratio-bar-bg">
-                  <div class="ratio-bar-fill" :style="{ width: Math.min(ri.ratioOfCategory, 100) + '%' }" />
+                  <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-stat">
+                    <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(ri.keywordCategory) }"></span>{{ ri.keywordCategory }}：{{ formatAmount(ri.categoryTotal) }}
+                  </span>
+                  <span class="ratio-stat">
+                    <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ ri.keyword }}：{{ formatAmount(ri.keywordTotal) }}
+                  </span>
                 </div>
                 <div class="ratio-stats-row">
-                  <span class="ratio-stat">{{ ri.keywordCategory }}消費：{{ formatAmount(ri.categoryTotal) }}</span>
-                  <span class="ratio-stat">{{ ri.keyword }}消費：{{ formatAmount(ri.keywordTotal) }}</span>
+                  <span class="ratio-stat">總消費佔比：{{ ri.ratioOfGrand }}%</span>
+                  <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-stat">{{ ri.keywordCategory }}佔比：{{ ri.ratioOfCategory }}%</span>
                 </div>
               </div>
             </template>
@@ -1232,6 +1239,39 @@ const monthlyBars = computed(() => {
   height: 8px;
   transition: width 0.4s ease;
   min-width: 2px;
+}
+
+.ratio-bar-wrap {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.ratio-bar-base {
+  position: absolute;
+  inset: 0;
+  background: #E8E0D8;
+  border-radius: 99px;
+}
+
+.ratio-bar-mid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.ratio-bar-front {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.4s ease;
 }
 
 .ratio-stats-row {
