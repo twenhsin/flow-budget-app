@@ -192,7 +192,7 @@
 
       <!-- analysis_compare: previous period trend chart (outside v-else-if chain) -->
       <div v-if="result.queryType === 'analysis_compare' && (result.compareTrendData?.length ?? 0) > 0" class="qr-compare-trend">
-        <div class="af-label">{{ (result.previousLabel ?? '上期') + '支出趨勢' }}</div>
+        <div class="af-label">{{ (result.currentLabel ?? '本期') + '支出趨勢' }}</div>
         <svg :viewBox="`0 0 ${AF_SVG_W} ${AF_SVG_H}`" class="af-trend-svg">
           <line v-for="g in cmpTrendYGrid" :key="g.chartY" :x1="AF_SVG_L" :y1="g.chartY" :x2="AF_SVG_W - AF_SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
           <text v-for="g in cmpTrendYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="var(--text-soft)">{{ g.label }}</text>
