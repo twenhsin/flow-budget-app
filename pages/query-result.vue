@@ -190,6 +190,19 @@
         </div>
       </div>
 
+      <!-- analysis_compare: previous period trend chart (outside v-else-if chain) -->
+      <div v-if="result.queryType === 'analysis_compare' && (result.compareTrendData?.length ?? 0) > 0" class="qr-compare-trend">
+        <div class="af-label">{{ (result.previousLabel ?? '上期') + '支出趨勢' }}</div>
+        <svg :viewBox="`0 0 ${AF_SVG_W} ${AF_SVG_H}`" class="af-trend-svg">
+          <line v-for="g in cmpTrendYGrid" :key="g.chartY" :x1="AF_SVG_L" :y1="g.chartY" :x2="AF_SVG_W - AF_SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
+          <text v-for="g in cmpTrendYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="var(--text-soft)">{{ g.label }}</text>
+          <polygon :points="cmpTrendArea()" style="fill:#E07A4F" opacity="0.12" />
+          <polyline :points="cmpTrendLine()" fill="none" style="stroke:#E07A4F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          <circle v-for="(pt, pIdx) in cmpTrendPts()" :key="pIdx" :cx="pt.x" :cy="pt.y" r="2.5" style="fill:#E07A4F" />
+          <text v-for="(d, lIdx) in (result.compareTrendData ?? [])" :key="'x'+lIdx" :x="AF_SVG_L + (lIdx / ((result.compareTrendData?.length ?? 1) - 1)) * AF_SVG_CW" :y="AF_SVG_H - 3" text-anchor="middle" font-size="8" fill="var(--text-soft)">{{ d.label }}</text>
+        </svg>
+      </div>
+
       <!-- Content -->
       <div class="qr-body">
       <!-- total / list: item list -->
@@ -607,6 +620,7 @@ interface QueryResult {
     items: any[]
   }[]
   rangeType?: 'week' | 'month' | 'year'
+  compareTrendData?: { label: string; value: number }[]
 }
 
 const result = useState<QueryResult>('queryResult', () => ({
@@ -795,6 +809,46 @@ function afLineStr(trendData: { label: string; value: number }[]) {
 
 function afAreaStr(trendData: { label: string; value: number }[]) {
   const pts = afGetPoints(trendData)
+  if (pts.length === 0) return ''
+  const bottom = AF_SVG_T + AF_SVG_CH
+  const line = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  return `${pts[0].x.toFixed(1)},${bottom} ${line} ${pts[pts.length - 1].x.toFixed(1)},${bottom}`
+}
+
+// ── Compare trend chart (analysis_compare, weekly) ─────────────────────────────
+const cmpTrendNiceMax = computed(() => {
+  const max = Math.max(...(result.value.compareTrendData ?? []).map(d => d.value), 1)
+  if (max < 1000) return Math.ceil(max / 200) * 200
+  if (max < 10000) return Math.ceil(max / 1000) * 1000
+  return Math.ceil(max / 10000) * 10000
+})
+
+const cmpTrendYGrid = computed(() => {
+  const max = cmpTrendNiceMax.value
+  return [0, 1, 2, 3, 4].map((i) => {
+    const ratio = i / 4
+    const val = Math.round(max * (1 - ratio))
+    const chartY = AF_SVG_T + ratio * AF_SVG_CH
+    return { chartY, label: formatYLabel(val) }
+  })
+})
+
+function cmpTrendPts() {
+  const data = result.value.compareTrendData ?? []
+  const n = data.length
+  const max = cmpTrendNiceMax.value
+  return data.map((d, i) => ({
+    x: AF_SVG_L + (n > 1 ? (i / (n - 1)) * AF_SVG_CW : AF_SVG_CW / 2),
+    y: AF_SVG_T + (max > 0 ? (1 - d.value / max) : 1) * AF_SVG_CH,
+  }))
+}
+
+function cmpTrendLine() {
+  return cmpTrendPts().map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+}
+
+function cmpTrendArea() {
+  const pts = cmpTrendPts()
   if (pts.length === 0) return ''
   const bottom = AF_SVG_T + AF_SVG_CH
   const line = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
@@ -1584,6 +1638,14 @@ const monthlyBars = computed(() => {
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* Compare trend chart */
+.qr-compare-trend {
+  flex-shrink: 0;
+  padding: 0 24px 16px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Analysis peak summary */

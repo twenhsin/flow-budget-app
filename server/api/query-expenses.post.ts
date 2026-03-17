@@ -309,6 +309,7 @@ title 補充規則（analysis 時）：
   let analysisPeakDay: { date: string; total: number } | null = null
   let analysisValleyDay: { date: string; total: number } | null = null
   let analysisCategoryChanges: { cat: string; current: number; prev: number; diff: number }[] = []
+  let compareTrendData: { label: string; value: number }[] = []
   let compareTotal = 0
   let keyword = ''
   let keywordCategory = ''
@@ -811,6 +812,18 @@ title 補充規則（analysis 時）：
         prev: prevCats[cat] ?? 0,
         diff: (currentCats[cat] ?? 0) - (prevCats[cat] ?? 0),
       })).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+      // 週比較：計算前週每日趨勢
+      if (compareFrom && compareTo) {
+        const compDiffDays = Math.round((new Date(compareTo).getTime() - new Date(compareFrom).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        if (compDiffDays >= 6 && compDiffDays <= 8) {
+          const arr = Array(7).fill(0)
+          for (const r of compareItems) {
+            const twDow = new Date(new Date(r.created_at).getTime() + TW_MS).getUTCDay()
+            arr[(twDow + 6) % 7] += r.amount
+          }
+          compareTrendData = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'].map((label, i) => ({ label, value: arr[i] }))
+        }
+      }
     }
   }
 
@@ -869,5 +882,6 @@ title 補充規則（analysis 時）：
     ratioItems,
     fullItems,
     rangeType: afRangeType,
+    compareTrendData,
   }
 })
