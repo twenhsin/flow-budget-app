@@ -254,6 +254,29 @@ title 補充規則（analysis 時）：
     compareToDate = compareToEx.toISOString().slice(0, 10)
   }
 
+  // Range type for analysis_full trend data
+  const diffDays = Math.round((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24))
+  const afRangeType: 'week' | 'month' | 'year' = diffDays <= 7 ? 'week' : diffDays <= 35 ? 'month' : 'year'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const computeAfTrend = (kItems: any[]): { label: string; value: number }[] => {
+    if (afRangeType === 'week') {
+      const arr = Array(7).fill(0)
+      for (const r of kItems) arr[(new Date(r.created_at).getDay() + 6) % 7] += r.amount
+      return ['週一', '週二', '週三', '週四', '週五', '週六', '週日'].map((label, i) => ({ label, value: arr[i] }))
+    }
+    if (afRangeType === 'month') {
+      const arr = Array(4).fill(0)
+      for (const r of kItems) {
+        const day = new Date(r.created_at).getDate()
+        arr[Math.min(Math.floor((day - 1) / 7), 3)] += r.amount
+      }
+      return ['第1週', '第2週', '第3週', '第4週'].map((label, i) => ({ label, value: arr[i] }))
+    }
+    const arr = Array(12).fill(0)
+    for (const r of kItems) arr[new Date(r.created_at).getMonth()] += r.amount
+    return ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'].map((label, i) => ({ label, value: arr[i] }))
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryItems: { type: string; value: string; expandedKeywords?: string[] }[] = Array.isArray(parsed.queries) ? parsed.queries : []
   const isAnalysisType = typeof queryType === 'string' && queryType.startsWith('analysis_')
@@ -288,7 +311,7 @@ title 補充規則（analysis 時）：
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let ratioItems: { keyword: string; keywordTotal: number; keywordCategory: string; categoryTotal: number; grandTotal: number; ratioOfGrand: number; ratioOfCategory: number; items: any[] }[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let fullItems: { keyword: string; keywordTotal: number; keywordCategory: string; categoryTotal: number; grandTotal: number; ratioOfGrand: number; ratioOfCategory: number; compareTotal: number; items: any[] }[] = []
+  let fullItems: { keyword: string; keywordTotal: number; keywordCategory: string; categoryTotal: number; grandTotal: number; ratioOfGrand: number; ratioOfCategory: number; compareTotal: number; trendData: { label: string; value: number }[]; compareChange: number; compareTrend: 'up' | 'down' | 'same'; items: any[] }[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sumAmount = (arr: any[]) => arr.reduce((s: number, r: { amount: number }) => s + r.amount, 0)
@@ -457,6 +480,9 @@ title 補充規則（analysis 時）：
           ratioOfGrand: grandTotal > 0 ? Math.round((kTotal / grandTotal) * 1000) / 10 : 0,
           ratioOfCategory: kCategoryTotal > 0 ? Math.round((kTotal / kCategoryTotal) * 1000) / 10 : 0,
           compareTotal: kCompareTotal,
+          trendData: computeAfTrend(kItems),
+          compareChange: kTotal - kCompareTotal,
+          compareTrend: (kTotal - kCompareTotal) > 0 ? 'up' : (kTotal - kCompareTotal) < 0 ? 'down' : 'same',
           items: kItems,
         })
       }
@@ -664,6 +690,9 @@ title 補充規則（analysis 時）：
           ratioOfGrand: grandTotal > 0 ? Math.round((kTotal / grandTotal) * 1000) / 10 : 0,
           ratioOfCategory: kCategoryTotal > 0 ? Math.round((kTotal / kCategoryTotal) * 1000) / 10 : 0,
           compareTotal: kCompareTotal,
+          trendData: computeAfTrend(kItems),
+          compareChange: kTotal - kCompareTotal,
+          compareTrend: (kTotal - kCompareTotal) > 0 ? 'up' : (kTotal - kCompareTotal) < 0 ? 'down' : 'same',
           items: kItems,
         })
       }

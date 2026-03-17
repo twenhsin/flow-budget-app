@@ -79,9 +79,8 @@
         </template>
       </div>
       <div v-else-if="result.queryType === 'analysis_full'" class="qr-af-summary">
-        <template v-for="(fi, fIdx) in (result.fullItems ?? [])" :key="fi.keyword">
-          <hr v-if="fIdx > 0" class="af-divider">
-          <!-- Ratio bar block -->
+        <!-- Per-keyword ratio blocks, each followed by a divider -->
+        <template v-for="fi in (result.fullItems ?? [])" :key="fi.keyword">
           <div v-if="fi.keywordTotal > 0" class="af-block">
             <div class="ratio-block-header">
               <span class="ratio-block-label" style="font-size:16px;font-weight:400">{{ fi.keyword }}佔比</span>
@@ -113,25 +112,39 @@
             </div>
           </div>
           <div v-else class="ratio-no-data">{{ fi.keyword }}：本期無此消費</div>
-          <!-- Compare block -->
-          <div v-if="fi.keywordTotal > 0" class="af-block">
-            <div class="af-label">與{{ result.previousLabel ?? '上期' }}比較</div>
-            <div class="af-compare-row">
-              <div class="af-compare-col">
-                <span class="compare-sum-label">{{ result.currentLabel ?? '本期' }}</span>
-                <span class="compare-sum-amount">-{{ formatAmount(fi.keywordTotal) }}</span>
-              </div>
-              <div class="compare-sum-vs">vs</div>
-              <div class="af-compare-col">
-                <span class="compare-sum-label">{{ result.previousLabel ?? '上期' }}</span>
-                <span class="compare-sum-amount compare-sum-prev" style="color:#8B5E3C">-{{ formatAmount(fi.compareTotal) }}</span>
-              </div>
-              <div class="compare-sum-diff" :class="(fi.keywordTotal - fi.compareTotal) >= 0 ? 'change-up' : 'change-down'">
-                {{ (fi.keywordTotal - fi.compareTotal) >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(fi.keywordTotal - fi.compareTotal)) }}
-              </div>
+          <hr class="af-divider">
+        </template>
+        <!-- Combined trend + compare section -->
+        <div v-if="(result.fullItems ?? []).some(fi => (fi.trendData?.length ?? 0) > 0)" class="af-block">
+          <div class="af-label">支出趨勢</div>
+          <!-- Legend: only for multi-keyword -->
+          <div v-if="(result.fullItems ?? []).filter(fi => fi.keywordTotal > 0).length > 1" class="af-legend">
+            <div v-for="fi in (result.fullItems ?? []).filter(fi => fi.keywordTotal > 0)" :key="fi.keyword" class="af-legend-item">
+              <span class="af-legend-dot" :style="{ background: catColor(fi.keyword) }"></span>
+              <span>{{ fi.keyword }}</span>
             </div>
           </div>
-        </template>
+          <!-- SVG trend chart -->
+          <svg :viewBox="`0 0 ${AF_SVG_W} ${AF_SVG_H}`" class="af-trend-svg">
+            <line v-for="g in afYGrid" :key="g.chartY" :x1="AF_SVG_L" :y1="g.chartY" :x2="AF_SVG_W - AF_SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
+            <text v-for="g in afYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="#B0A090">{{ g.label }}</text>
+            <template v-for="fi in (result.fullItems ?? []).filter(fi => (fi.trendData?.length ?? 0) > 0)" :key="fi.keyword">
+              <polygon :points="afAreaStr(fi.trendData ?? [])" :fill="catColor(fi.keyword)" opacity="0.12" />
+              <polyline :points="afLineStr(fi.trendData ?? [])" fill="none" :stroke="catColor(fi.keyword)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <circle v-for="(pt, pIdx) in afGetPoints(fi.trendData ?? [])" :key="pIdx" :cx="pt.x" :cy="pt.y" r="2.5" :fill="catColor(fi.keyword)" />
+            </template>
+            <text v-for="(label, lIdx) in afXLabels" :key="'x'+lIdx" :x="AF_SVG_L + (afXLabels.length > 1 ? (lIdx / (afXLabels.length - 1)) * AF_SVG_CW : AF_SVG_CW / 2)" :y="AF_SVG_H - 3" text-anchor="middle" font-size="8" fill="#B0A090">{{ label }}</text>
+          </svg>
+          <!-- Compare text per keyword -->
+          <div v-for="fi in (result.fullItems ?? []).filter(fi => fi.keywordTotal > 0)" :key="'cmp'+fi.keyword" class="af-compare-text-row">
+            <span v-if="(result.fullItems ?? []).filter(fi => fi.keywordTotal > 0).length > 1" class="af-compare-text-kw">{{ fi.keyword }}</span>
+            <span class="af-compare-text-label">與{{ result.previousLabel ?? '上期' }}相比</span>
+            <span :class="['af-compare-text-diff', (fi.compareChange ?? 0) >= 0 ? 'change-up' : 'change-down']">
+              {{ (fi.compareChange ?? 0) >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(fi.compareChange ?? 0)) }}
+            </span>
+          </div>
+        </div>
+        <hr class="af-divider">
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -564,6 +577,9 @@ interface QueryResult {
     ratioOfGrand: number
     ratioOfCategory: number
     compareTotal: number
+    trendData?: { label: string; value: number }[]
+    compareChange?: number
+    compareTrend?: 'up' | 'down' | 'same'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: any[]
   }[]
@@ -688,6 +704,59 @@ const topCatSectionLabel = computed(() =>
 // ── Analysis ───────────────────────────────────────────────────────────────────
 const compareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
 const afCompareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
+
+// ── Analysis Full trend chart ───────────────────────────────────────────────────
+const AF_SVG_W = 300
+const AF_SVG_H = 120
+const AF_SVG_L = 30
+const AF_SVG_R = 6
+const AF_SVG_T = 10
+const AF_SVG_B = 22
+const AF_SVG_CW = AF_SVG_W - AF_SVG_L - AF_SVG_R
+const AF_SVG_CH = AF_SVG_H - AF_SVG_T - AF_SVG_B
+
+const afNiceMax = computed(() => {
+  const allVals = (result.value.fullItems ?? []).flatMap(fi => (fi.trendData ?? []).map(d => d.value))
+  const max = Math.max(...allVals, 1)
+  if (max < 1000) return Math.ceil(max / 200) * 200
+  if (max < 10000) return Math.ceil(max / 1000) * 1000
+  return Math.ceil(max / 10000) * 10000
+})
+
+const afYGrid = computed(() => {
+  const max = afNiceMax.value
+  return [0, 1, 2, 3, 4].map((i) => {
+    const ratio = i / 4
+    const val = Math.round(max * (1 - ratio))
+    const chartY = AF_SVG_T + ratio * AF_SVG_CH
+    return { chartY, label: formatYLabel(val) }
+  })
+})
+
+const afXLabels = computed(() =>
+  result.value.fullItems?.[0]?.trendData?.map(d => d.label) ?? [],
+)
+
+function afGetPoints(trendData: { label: string; value: number }[]) {
+  const n = trendData.length
+  const max = afNiceMax.value
+  return trendData.map((d, i) => ({
+    x: AF_SVG_L + (n > 1 ? (i / (n - 1)) * AF_SVG_CW : AF_SVG_CW / 2),
+    y: AF_SVG_T + (max > 0 ? (1 - d.value / max) : 1) * AF_SVG_CH,
+  }))
+}
+
+function afLineStr(trendData: { label: string; value: number }[]) {
+  return afGetPoints(trendData).map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+}
+
+function afAreaStr(trendData: { label: string; value: number }[]) {
+  const pts = afGetPoints(trendData)
+  if (pts.length === 0) return ''
+  const bottom = AF_SVG_T + AF_SVG_CH
+  const line = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  return `${pts[0].x.toFixed(1)},${bottom} ${line} ${pts[pts.length - 1].x.toFixed(1)},${bottom}`
+}
 
 // Trend chart
 const trendNiceMax = computed(() => {
@@ -1001,7 +1070,7 @@ const monthlyBars = computed(() => {
 }
 
 .item-cat {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
 }
 
@@ -1077,7 +1146,7 @@ const monthlyBars = computed(() => {
 }
 
 .topn-item-date {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
   flex-shrink: 0;
 }
@@ -1131,7 +1200,7 @@ const monthlyBars = computed(() => {
 }
 
 .rank-pct {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -1289,7 +1358,7 @@ const monthlyBars = computed(() => {
 }
 
 .ratio-stat {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1390,7 +1459,7 @@ const monthlyBars = computed(() => {
 }
 
 .cat-change-header-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
   text-align: right;
 }
@@ -1444,7 +1513,7 @@ const monthlyBars = computed(() => {
 }
 
 .peak-badge {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 20px;
@@ -1519,6 +1588,60 @@ const monthlyBars = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.af-trend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 4px 0 8px;
+}
+
+.af-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 6px;
+}
+
+.af-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.af-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.af-compare-text-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.af-compare-text-kw {
+  color: var(--accent);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.af-compare-text-label {
+  color: var(--text-soft);
+  flex: 1;
+}
+
+.af-compare-text-diff {
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 /* Bottom input */
