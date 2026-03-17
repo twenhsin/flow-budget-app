@@ -1426,7 +1426,7 @@ const monthlyBars = computed(() => {
 }
 
 .compare-sum-prev {
-  color: #B0A090;
+  color: var(--text);
 }
 
 .compare-sum-vs {
