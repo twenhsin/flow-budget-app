@@ -251,6 +251,13 @@ title 補充規則（analysis 時）：
   const compareTo: string | undefined = parsed.compareTo || undefined
   const currentLabel: string = parsed.currentLabel ?? '本期'
   const previousLabel: string = parsed.previousLabel ?? '上期'
+
+  // 若使用者問句沒有明確比較意圖，analysis_compare 標題不加「vs 前一週」
+  const hasCompareIntent = /比較|比上|vs|VS|對比|和.{0,10}相比|跟.{0,10}比/.test(question)
+  const resolvedTitle: string = (queryType === 'analysis_compare' && !hasCompareIntent)
+    ? `${currentLabel}消費分析`
+    : (title as string)
+
   let compareToDate: string | undefined
   if (compareFrom && compareTo) {
     const compareToEx = new Date(compareTo)
@@ -854,7 +861,7 @@ title 補充規則（analysis 時）：
     groups: groups.map(g => ({ label: g.label, total: g.total, itemsCount: g.items.length })),
   }))
   return {
-    title,
+    title: resolvedTitle,
     queryType: effectiveQueryType,
     total,
     items,
