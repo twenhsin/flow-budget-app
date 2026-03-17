@@ -258,6 +258,8 @@ title 補充規則（analysis 時）：
     compareToDate = compareToEx.toISOString().slice(0, 10)
   }
 
+  console.log('[debug] parsed.dateFrom:', parsed.dateFrom, '| parsed.dateTo:', parsed.dateTo, '| dateFrom:', dateFrom, '| dateTo(exclusive):', dateTo)
+
   // Range type for analysis_full trend data
   const diffDays = Math.round((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24))
   const afRangeType: 'week' | 'month' | 'year' = diffDays <= 7 ? 'week' : diffDays <= 35 ? 'month' : 'year'
@@ -707,6 +709,7 @@ title 補充規則（analysis 時）：
       }
     }
     else if (isAnalysisType) {
+      console.log('[debug] analysis 查詢條件: dateFrom >=', dateFrom, '| dateTo <', dateTo, '| user_id:', user.id)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (client as any)
         .from('expenses')
@@ -720,7 +723,9 @@ title 補充規則（analysis 時）：
         throw createError({ statusCode: 500, message: error.message })
       }
       items = data ?? []
+      console.log('[debug] analysis 查詢結果: 筆數 =', items.length, '| 第一筆 created_at:', items[0]?.created_at ?? 'N/A', '| 最後一筆 created_at:', items[items.length - 1]?.created_at ?? 'N/A')
       if (compareFrom && compareToDate) {
+        console.log('[debug] compare 查詢條件: compareFrom >=', compareFrom, '| compareToDate <', compareToDate)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: cData, error: cError } = await (client as any)
           .from('expenses')
@@ -731,6 +736,7 @@ title 補充規則（analysis 時）：
           .order('created_at', { ascending: true })
         if (cError) console.error('[query-expenses] compare 查詢失敗:', cError)
         compareItems = cData ?? []
+        console.log('[debug] compare 查詢結果: 筆數 =', compareItems.length)
       }
     }
     else if (queryItems.length > 0) {
