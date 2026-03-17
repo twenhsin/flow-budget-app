@@ -47,21 +47,6 @@
           <template v-else>
             <div class="card-divider" />
 
-            <!-- Category breakdown -->
-            <div class="card-section">
-              <div class="section-title">各類別支出</div>
-              <div v-for="cat in categoryData" :key="cat.cat" class="cat-row">
-                <div class="cat-icon" :style="{ background: catColor(cat.cat) }">
-                  <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
-                </div>
-                <span class="cat-name">{{ cat.cat }}</span>
-                <span class="cat-pct">{{ cat.pct }}%</span>
-                <span class="cat-amount">-{{ formatAmount(cat.amount) }}</span>
-              </div>
-            </div>
-
-            <div class="card-divider" />
-
             <!-- Trend chart -->
             <div class="card-section">
               <div class="section-title">本期支出趨勢</div>
@@ -123,6 +108,21 @@
                   fill="#B0A090"
                 >{{ xLabels[i] }}</text>
               </svg>
+            </div>
+
+            <div class="card-divider" />
+
+            <!-- Category breakdown -->
+            <div class="card-section">
+              <div class="section-title">各類別支出</div>
+              <div v-for="cat in categoryData" :key="cat.cat" class="cat-row">
+                <div class="cat-icon" :style="{ background: catColor(cat.cat) }">
+                  <CatIcon :category="cat.cat" :size="14" :stroke-width="1.8" />
+                </div>
+                <span class="cat-name">{{ cat.cat }}</span>
+                <span class="cat-pct">{{ cat.pct }}%</span>
+                <span class="cat-amount">-{{ formatAmount(cat.amount) }}</span>
+              </div>
             </div>
           </template>
         </div>
