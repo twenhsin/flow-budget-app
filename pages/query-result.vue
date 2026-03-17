@@ -16,7 +16,7 @@
       </div>
       <div class="qr-scroll">
       <!-- Summary area -->
-      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio' && result.queryType !== 'analysis_full'" class="qr-total">
+      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio' && result.queryType !== 'analysis_full' && result.queryType !== 'analysis_peak'" class="qr-total">
         <span class="qr-total-label">總計</span>
         <span class="qr-total-amount">-{{ formatAmount(result.total) }}</span>
       </div>
@@ -145,6 +145,20 @@
           </div>
         </div>
         <hr class="af-divider">
+      </div>
+      <div v-else-if="result.queryType === 'analysis_peak'" class="qr-peak-summary">
+        <div class="peak-sum-row">
+          <span class="peak-sum-label">當月最高消費項目</span>
+          <span class="peak-sum-value">{{ peakTopItem ? peakTopItem.name + '　-' + formatAmount(peakTopItem.amount) : '—' }}</span>
+        </div>
+        <div class="peak-sum-row">
+          <span class="peak-sum-label">當月最高消費類別</span>
+          <span class="peak-sum-value">{{ peakTopCategory ? peakTopCategory.cat + '　-' + formatAmount(peakTopCategory.total) : '—' }}</span>
+        </div>
+        <div class="peak-sum-row">
+          <span class="peak-sum-label">當月最高消費日</span>
+          <span class="peak-sum-value">{{ result.analysisPeakDay ? result.analysisPeakDay.date.replace(/^\d{4}-/, '').replace('-', '/') + '　-' + formatAmount(result.analysisPeakDay.total) : '—' }}</span>
+        </div>
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -704,6 +718,21 @@ const topCatSectionLabel = computed(() =>
 // ── Analysis ───────────────────────────────────────────────────────────────────
 const compareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
 const afCompareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
+
+// ── Analysis Peak summary ───────────────────────────────────────────────────────
+const peakTopItem = computed(() => {
+  const items = result.value.items ?? []
+  if (!items.length) return null
+  return items.reduce((a: any, b: any) => b.amount > a.amount ? b : a)
+})
+const peakTopCategory = computed(() => {
+  const items = result.value.items ?? []
+  if (!items.length) return null
+  const totals: Record<string, number> = {}
+  for (const r of items) totals[r.category] = (totals[r.category] ?? 0) + r.amount
+  const [cat, total] = Object.entries(totals).reduce((a, b) => b[1] > a[1] ? b : a)
+  return { cat, total }
+})
 
 // ── Analysis Full trend chart ───────────────────────────────────────────────────
 const AF_SVG_W = 300
@@ -1541,6 +1570,38 @@ const monthlyBars = computed(() => {
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* Analysis peak summary */
+.qr-peak-summary {
+  flex-shrink: 0;
+  padding: 16px 24px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.peak-sum-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.peak-sum-label {
+  font-size: 13px;
+  color: var(--text-soft);
+  flex-shrink: 0;
+}
+
+.peak-sum-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8B5E3C;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* Analysis full summary */
