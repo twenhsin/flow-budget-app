@@ -18,31 +18,35 @@ export default defineEventHandler(async (event) => {
   const isGuest = Array.isArray(guestExpenses)
   const userCatNames: string[] = Array.isArray(userCategories) ? userCategories : []
 
-  const todayDate = new Date()
-  const today = todayDate.toISOString().slice(0, 10)
-
-  // 預計算常用相對日期，直接注入 prompt 避免 AI 自行計算出錯
   const pad = (n: number) => String(n).padStart(2, '0')
-  const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
-  const yesterday = new Date(todayDate)
-  yesterday.setDate(yesterday.getDate() - 1)
+  // 以台灣時區 (UTC+8) 計算日期，避免伺服器 UTC 與台灣時間跨日造成週次計算錯誤
+  const TW_MS = 8 * 60 * 60 * 1000
+  const twRef = new Date(Date.now() + TW_MS) // 台灣當下時間（以 UTC 方法讀取）
+  const twY = twRef.getUTCFullYear()
+  const twM = twRef.getUTCMonth()            // 0-indexed
+  const twD = twRef.getUTCDate()
+  const today = `${twY}-${pad(twM + 1)}-${pad(twD)}`
 
-  // 本週一（週日 offset = -6，其他 = -(weekday-1)）
-  const dow = todayDate.getDay()
-  const thisWeekMonday = new Date(todayDate)
-  thisWeekMonday.setDate(thisWeekMonday.getDate() - (dow === 0 ? 6 : dow - 1))
+  // 建立純 UTC 日期物件 & 格式化（與 twRef 系列搭配使用）
+  const mkDate = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d))
+  const fmtDate = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 
-  // 上週一 & 上週日
-  const lastWeekMonday = new Date(thisWeekMonday)
-  lastWeekMonday.setDate(lastWeekMonday.getDate() - 7)
-  const lastWeekSunday = new Date(lastWeekMonday)
-  lastWeekSunday.setDate(lastWeekSunday.getDate() + 6)
+  const yesterday = mkDate(twY, twM, twD - 1)
+
+  // 本週一：以台灣 getUTCDay() 往回推算到週一（Mon–Sun 為一週）
+  const twDow = twRef.getUTCDay()              // 0=Sun, 1=Mon, ..., 6=Sat（台灣星期）
+  const daysFromMonday = twDow === 0 ? 6 : twDow - 1
+  const thisWeekMonday = mkDate(twY, twM, twD - daysFromMonday)
+
+  // 上週一（本週一 -7 天）& 上週日（上週一 +6 天，共 Mon–Sun 7 天）
+  const lastWeekMonday = mkDate(twY, twM, twD - daysFromMonday - 7)
+  const lastWeekSunday  = mkDate(twY, twM, twD - daysFromMonday - 7 + 6)
 
   // 本月第一天 & 上月第一天/最後一天
-  const thisMonthFirst = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1)
-  const lastMonthFirst = new Date(todayDate.getFullYear(), todayDate.getMonth() - 1, 1)
-  const lastMonthLast = new Date(todayDate.getFullYear(), todayDate.getMonth(), 0)
+  const thisMonthFirst = mkDate(twY, twM, 1)
+  const lastMonthFirst = mkDate(twY, twM - 1, 1)
+  const lastMonthLast  = mkDate(twY, twM, 0) // day=0 → 上月最後一天
 
   const dateHints = `
 相對日期對照表（基於今天 ${today}）：
@@ -52,10 +56,10 @@ export default defineEventHandler(async (event) => {
 - 上週：dateFrom=${fmtDate(lastWeekMonday)}, dateTo=${fmtDate(lastWeekSunday)}
 - 本月：dateFrom=${fmtDate(thisMonthFirst)}, dateTo=${today}
 - 上個月：dateFrom=${fmtDate(lastMonthFirst)}, dateTo=${fmtDate(lastMonthLast)}
-- 今年：dateFrom=${todayDate.getFullYear()}-01-01, dateTo=${today}
-- 近7天：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setDate(d.getDate() - 6); return d })())}, dateTo=${today}
-- 近30天：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setDate(d.getDate() - 29); return d })())}, dateTo=${today}
-- 近三個月：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 3); return d })())}, dateTo=${today}
+- 今年：dateFrom=${twY}-01-01, dateTo=${today}
+- 近7天：dateFrom=${fmtDate(mkDate(twY, twM, twD - 6))}, dateTo=${today}
+- 近30天：dateFrom=${fmtDate(mkDate(twY, twM, twD - 29))}, dateTo=${today}
+- 近三個月：dateFrom=${fmtDate(mkDate(twY, twM - 3, twD))}, dateTo=${today}
 請嚴格依此對照表設定日期，不要自行推算。`
 
 
@@ -261,7 +265,11 @@ title 補充規則（analysis 時）：
   const computeAfTrend = (kItems: any[]): { label: string; value: number }[] => {
     if (afRangeType === 'week') {
       const arr = Array(7).fill(0)
-      for (const r of kItems) arr[(new Date(r.created_at).getDay() + 6) % 7] += r.amount
+      for (const r of kItems) {
+        // 使用台灣時區取得正確的星期幾
+        const twDow2 = new Date(new Date(r.created_at).getTime() + TW_MS).getUTCDay()
+        arr[(twDow2 + 6) % 7] += r.amount
+      }
       return ['週一', '週二', '週三', '週四', '週五', '週六', '週日'].map((label, i) => ({ label, value: arr[i] }))
     }
     if (afRangeType === 'month') {
@@ -860,5 +868,6 @@ title 補充規則（analysis 時）：
     ratioOfCategory,
     ratioItems,
     fullItems,
+    rangeType: afRangeType,
   }
 })

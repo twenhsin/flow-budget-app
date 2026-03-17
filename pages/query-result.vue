@@ -79,7 +79,8 @@
         </template>
       </div>
       <div v-else-if="result.queryType === 'analysis_full'" class="qr-af-summary">
-        <!-- Per-keyword ratio blocks, each followed by a divider -->
+        <!-- Per-keyword ratio blocks：週查詢時隱藏 -->
+        <template v-if="result.rangeType !== 'week'">
         <template v-for="fi in (result.fullItems ?? [])" :key="fi.keyword">
           <div v-if="fi.keywordTotal > 0" class="af-block">
             <div class="ratio-block-header">
@@ -114,13 +115,16 @@
           <div v-else class="ratio-no-data">{{ fi.keyword }}：本期無此消費</div>
           <hr class="af-divider">
         </template>
+        </template><!-- end v-if rangeType !== week -->
         <!-- Combined trend + compare section -->
         <div v-if="(result.fullItems ?? []).some(fi => (fi.trendData?.length ?? 0) > 0)" class="af-block">
-          <div class="af-label">支出趨勢</div>
+          <div class="af-label" :class="{ 'af-label-accent': result.rangeType === 'week' }">
+            {{ result.rangeType === 'week' ? (result.currentLabel ?? '本週') + '支出趨勢' : '支出趨勢' }}
+          </div>
           <!-- Legend: only for multi-keyword -->
           <div v-if="(result.fullItems ?? []).filter(fi => fi.keywordTotal > 0).length > 1" class="af-legend">
             <div v-for="fi in (result.fullItems ?? []).filter(fi => fi.keywordTotal > 0)" :key="fi.keyword" class="af-legend-item">
-              <span class="af-legend-dot" :style="{ background: catColor(fi.keywordCategory || fi.keyword) }"></span>
+              <span class="af-legend-dot" :style="{ background: afChartColor(fi) }"></span>
               <span>{{ fi.keyword }}</span>
             </div>
           </div>
@@ -129,16 +133,21 @@
             <line v-for="g in afYGrid" :key="g.chartY" :x1="AF_SVG_L" :y1="g.chartY" :x2="AF_SVG_W - AF_SVG_R" :y2="g.chartY" stroke="rgba(0,0,0,0.07)" stroke-width="0.8" />
             <text v-for="g in afYGrid" :key="'y'+g.chartY" x="0" :y="g.chartY + 3" text-anchor="start" font-size="8" fill="var(--text-soft)">{{ g.label }}</text>
             <template v-for="fi in (result.fullItems ?? []).filter(fi => (fi.trendData?.length ?? 0) > 0)" :key="fi.keyword">
-              <polygon :points="afAreaStr(fi.trendData ?? [])" :fill="catColor(fi.keywordCategory || fi.keyword)" opacity="0.12" />
-              <polyline :points="afLineStr(fi.trendData ?? [])" fill="none" :stroke="catColor(fi.keywordCategory || fi.keyword)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              <circle v-for="(pt, pIdx) in afGetPoints(fi.trendData ?? [])" :key="pIdx" :cx="pt.x" :cy="pt.y" r="2.5" :fill="catColor(fi.keywordCategory || fi.keyword)" />
+              <polygon :points="afAreaStr(fi.trendData ?? [])" :style="{ fill: afChartColor(fi) }" opacity="0.12" />
+              <polyline :points="afLineStr(fi.trendData ?? [])" fill="none" :style="{ stroke: afChartColor(fi) }" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <circle v-for="(pt, pIdx) in afGetPoints(fi.trendData ?? [])" :key="pIdx" :cx="pt.x" :cy="pt.y" r="2.5" :style="{ fill: afChartColor(fi) }" />
             </template>
             <text v-for="(label, lIdx) in afXLabels" :key="'x'+lIdx" :x="AF_SVG_L + (afXLabels.length > 1 ? (lIdx / (afXLabels.length - 1)) * AF_SVG_CW : AF_SVG_CW / 2)" :y="AF_SVG_H - 3" text-anchor="middle" font-size="8" fill="var(--text-soft)">{{ label }}</text>
           </svg>
+          <hr class="af-divider" style="margin: 4px 0">
+          <div class="af-label">與{{ result.previousLabel ?? '上期' }}比較</div>
           <!-- Compare text per keyword -->
           <div v-for="fi in (result.fullItems ?? []).filter(fi => fi.keywordTotal > 0)" :key="'cmp'+fi.keyword" class="af-compare-text-row">
             <span v-if="(result.fullItems ?? []).filter(fi => fi.keywordTotal > 0).length > 1" class="af-compare-text-kw">{{ fi.keyword }}</span>
-            <span class="af-compare-text-label">與{{ result.previousLabel ?? '上期' }}相比</span>
+            <span class="af-compare-text-label">
+              <template v-if="result.rangeType === 'week'">{{ result.previousLabel ?? '上期' }}：-{{ formatAmount(fi.compareTotal) }}</template>
+              <template v-else>與{{ result.previousLabel ?? '上期' }}相比</template>
+            </span>
             <span :class="['af-compare-text-diff', (fi.compareChange ?? 0) >= 0 ? 'change-up' : 'change-down']">
               {{ (fi.compareChange ?? 0) >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(fi.compareChange ?? 0)) }}
             </span>
@@ -597,6 +606,7 @@ interface QueryResult {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: any[]
   }[]
+  rangeType?: 'week' | 'month' | 'year'
 }
 
 const result = useState<QueryResult>('queryResult', () => ({
@@ -718,6 +728,10 @@ const topCatSectionLabel = computed(() =>
 // ── Analysis ───────────────────────────────────────────────────────────────────
 const compareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
 const afCompareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
+
+function afChartColor(fi: { keywordCategory: string; keyword: string }): string {
+  return result.value.rangeType === 'week' ? 'var(--accent)' : catColor(fi.keywordCategory || fi.keyword)
+}
 
 // ── Analysis Peak summary ───────────────────────────────────────────────────────
 const peakTopItem = computed(() => {
@@ -1632,6 +1646,10 @@ const monthlyBars = computed(() => {
   font-weight: 400;
   color: var(--text-soft);
   margin-bottom: 2px;
+}
+
+.af-label-accent {
+  color: var(--accent);
 }
 
 .af-amount {
