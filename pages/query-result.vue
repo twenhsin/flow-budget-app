@@ -80,14 +80,14 @@
       </div>
       <div v-else-if="result.queryType === 'analysis_full'" class="qr-af-summary">
         <!-- Block 1: Current total -->
-        <div class="af-block">
+        <div class="af-block" style="flex-direction:row;justify-content:space-between;align-items:baseline;">
           <div class="af-label">{{ result.currentLabel ?? '本月' }}總計</div>
-          <div class="af-amount">-<span style="font-weight:700;color:#8B5E3C;font-family:'Chivo Mono',monospace;font-size:40px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;">{{ formatAmount(result.total) }}</span></div>
+          <div class="af-amount"><span style="font-weight:700;color:#8B5E3C;font-family:'Chivo Mono',monospace;font-size:40px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;">-{{ formatAmount(result.total) }}</span></div>
         </div>
         <!-- Block 2: Ratio bar -->
         <div v-if="result.total > 0" class="af-block">
           <div class="ratio-block-header">
-            <span class="ratio-block-label">{{ result.keyword ?? '' }}佔比</span>
+            <span class="ratio-block-label" style="font-size:16px;font-weight:600">{{ result.keyword ?? '' }}佔比</span>
           </div>
           <div class="ratio-bar-wrap">
             <div class="ratio-bar-base"></div>
@@ -1456,7 +1456,8 @@ const monthlyBars = computed(() => {
 }
 
 .af-label {
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-soft);
   margin-bottom: 2px;
 }
