@@ -9,6 +9,7 @@
 
     <!-- Result state -->
     <template v-else>
+      <div class="qr-scroll">
       <!-- Header -->
       <div class="qr-header">
         <div class="qr-title" v-html="result.title" />
@@ -103,17 +104,17 @@
             <div class="ratio-bar-front" :style="{ width: Math.min(result.ratioOfGrand ?? 0, 100) + '%' }"></div>
           </div>
           <div class="ratio-stats-row">
-            <span class="ratio-stat">總消費：<span style="font-weight:600">{{ formatAmount(result.grandTotal ?? 0) }}</span></span>
+            <span class="ratio-stat">總消費：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(result.grandTotal ?? 0) }}</span></span>
             <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">
-              <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(result.keywordCategory) }"></span>{{ result.keywordCategory }}：<span style="font-weight:600">{{ formatAmount(result.categoryTotal ?? 0) }}</span>
+              <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(result.keywordCategory) }"></span>{{ result.keywordCategory }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(result.categoryTotal ?? 0) }}</span>
             </span>
             <span class="ratio-stat">
-              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ result.keyword ?? '' }}：<span style="font-weight:600">{{ formatAmount(result.total) }}</span>
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ result.keyword ?? '' }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(result.total) }}</span>
             </span>
           </div>
           <div class="ratio-stats-row">
-            <span class="ratio-stat">總消費佔比：<span style="font-weight:600">{{ result.ratioOfGrand ?? 0 }}%</span></span>
-            <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}佔比：<span style="font-weight:600">{{ result.ratioOfCategory ?? 0 }}%</span></span>
+            <span class="ratio-stat">總消費佔比：<span style="font-weight:600;color:#8B5E3C">{{ result.ratioOfGrand ?? 0 }}%</span></span>
+            <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}佔比：<span style="font-weight:600;color:#8B5E3C">{{ result.ratioOfCategory ?? 0 }}%</span></span>
           </div>
         </div>
         <hr v-if="result.total > 0" class="af-divider">
@@ -128,7 +129,7 @@
             <div class="compare-sum-vs">vs</div>
             <div class="af-compare-col">
               <span class="compare-sum-label">{{ result.previousLabel ?? '上期' }}</span>
-              <span class="compare-sum-amount compare-sum-prev">-{{ formatAmount(result.compareTotal ?? 0) }}</span>
+              <span class="compare-sum-amount compare-sum-prev" style="color:#8B5E3C">-{{ formatAmount(result.compareTotal ?? 0) }}</span>
             </div>
             <div class="compare-sum-diff" :class="afCompareDiff >= 0 ? 'change-up' : 'change-down'">
               {{ afCompareDiff >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(afCompareDiff)) }}
@@ -171,6 +172,7 @@
               <span class="item-name">{{ item.name }}</span>
               <span class="item-cat">{{ item.category }}</span>
             </div>
+            <span class="item-date">{{ formatDateShort(item.created_at) }}</span>
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
           <div v-if="result.items.length === 0" class="item-empty">此期間無紀錄</div>
@@ -213,6 +215,7 @@
               <span class="item-name">{{ item.name }}</span>
               <span class="item-cat">{{ item.category }}</span>
             </div>
+            <span class="item-date">{{ formatDateShort(item.created_at) }}</span>
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
           <div v-if="g.items.length === 0" class="item-empty">無符合紀錄</div>
@@ -297,6 +300,7 @@
               <span class="item-name">{{ item.name }}</span>
               <span class="item-cat">{{ item.category }}</span>
             </div>
+            <span class="item-date">{{ formatDateShort(item.created_at) }}</span>
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
           <div v-if="ri.items.length === 0" class="item-empty">本期無此消費</div>
@@ -319,6 +323,7 @@
               <span class="item-name">{{ item.name }}</span>
               <span class="item-cat">{{ item.category }}</span>
             </div>
+            <span class="item-date">{{ formatDateShort(item.created_at) }}</span>
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
           <div v-if="result.items.length === 0" class="item-empty">本期無此消費</div>
@@ -444,6 +449,7 @@
         </div>
       </template>
     </div>
+      </div><!-- end qr-scroll -->
     </template><!-- end v-else result -->
 
     <!-- Bottom input bar -->
@@ -851,12 +857,21 @@ const monthlyBars = computed(() => {
   flex: 1;
 }
 
+/* Scroll container */
+.qr-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Header */
 .qr-header {
-  flex-shrink: 0;
   padding: 24px 24px 0;
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: #fffaf0;
 }
 
 .qr-title {
@@ -913,10 +928,6 @@ const monthlyBars = computed(() => {
 
 /* Body */
 .qr-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   padding: 0 24px 24px;
   position: relative;
   z-index: 1;
@@ -1056,6 +1067,13 @@ const monthlyBars = computed(() => {
   flex-shrink: 0;
 }
 
+.item-date {
+  font-size: 12px;
+  color: var(--text-soft);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .topn-cat-row {
   display: flex;
   align-items: center;
@@ -1142,7 +1160,7 @@ const monthlyBars = computed(() => {
 .group-divider {
   height: 1px;
   background: var(--border);
-  margin: 0 16px;
+  margin: 0;
 }
 
 /* Monthly chart */
@@ -1454,7 +1472,7 @@ const monthlyBars = computed(() => {
 
 .af-divider {
   border: none;
-  border-top: 1px solid var(--text);
+  border-top: 1px solid rgba(196, 168, 130, 0.25);
   margin: 0;
 }
 
