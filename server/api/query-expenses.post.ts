@@ -58,9 +58,6 @@ export default defineEventHandler(async (event) => {
 - 近三個月：dateFrom=${fmtDate((() => { const d = new Date(todayDate); d.setMonth(d.getMonth() - 3); return d })())}, dateTo=${today}
 請嚴格依此對照表設定日期，不要自行推算。`
 
-  const userCatLine = userCatNames.length > 0
-    ? `\n- 用戶自訂類別（優先比對）：${userCatNames.join('、')}`
-    : ''
 
   // Step 1 — GPT-4o 解析問題
   const SYSTEM_GUARD = `你是一個記帳助理，只能處理與個人消費記帳相關的任務。
@@ -102,21 +99,28 @@ ${dateHints}
 
 queries 規則：
 - 用戶提到的每個關鍵字都必須各自列為一個獨立的 query 項目，不可省略任何一個
-- type "category"：關鍵字對應到已知類別（以下預設類別或自訂類別）時使用
-  預設類別：${CATEGORY_NAMES.join('、')}${userCatLine}
-  自訂類別優先比對，相符則使用完整自訂類別名稱
-  ⚠️ 重要：「3C」、「3c」、「3C用品」是科技產品的消費類別名稱，不是數量。若輸入包含「3C」且與類別相符，type 必須為 "category"，value 為完整類別名稱（如「3C」）
-- type "nameKeyword"：關鍵字是品項名稱（如咖啡、便當、按摩）時使用，必須同時提供 expandedKeywords 陣列，包含所有語意相關的同義詞、品項變體、英文別名（最多 10 個）
-  例：{ "type": "nameKeyword", "value": "咖啡", "expandedKeywords": ["咖啡", "拿鐵", "美式", "卡布奇諾", "冰咖啡", "榛果", "摩卡", "濃縮"] }
-  例：{ "type": "nameKeyword", "value": "傳輸線", "expandedKeywords": ["傳輸線", "數據線", "充電線", "lightning", "usb"] }
-  例：{ "type": "nameKeyword", "value": "按摩", "expandedKeywords": ["按摩", "spa", "推拿", "指壓", "泰式按摩"] }
+
+判斷 type 的唯一規則：
+  ① 先比對完整類別清單（自訂類別優先，再比預設類別）：
+     自訂類別：${userCatNames.length > 0 ? userCatNames.join('、') : '（無）'}
+     預設類別：${CATEGORY_NAMES.join('、')}
+  ② 若關鍵字與上述清單中任一名稱「完全相符」→ type:"category", value 為完整類別名稱
+  ③ 若關鍵字不在上述清單中 → type:"nameKeyword"，必須同時提供 expandedKeywords（同義詞+變體+英文，最多 10 個）
+  ⚠️ 「完全相符」是唯一判斷標準：「午餐」、「晚餐」、「早餐」、「便當」、「咖啡」、「奶茶」等都不在預設類別中，除非用戶有自訂同名類別，否則一律用 nameKeyword
+  ⚠️ 不可用語意相近來推斷（「午餐」≠「餐飲」類別）
+  ⚠️「3C」、「3c」與類別名稱完全相符時，type 為 "category"，不是數量
+
+- type "nameKeyword" 範例：
+  { "type": "nameKeyword", "value": "咖啡", "expandedKeywords": ["咖啡", "拿鐵", "美式", "卡布奇諾", "冰咖啡", "榛果", "摩卡", "濃縮"] }
+  { "type": "nameKeyword", "value": "午餐", "expandedKeywords": ["午餐", "午飯", "中餐", "便當", "定食", "套餐"] }
+  { "type": "nameKeyword", "value": "按摩", "expandedKeywords": ["按摩", "spa", "推拿", "指壓", "泰式按摩"] }
 - 即使關鍵字之間沒有任何標點符號，也必須嘗試將輸入拆解為多個關鍵字，不可只取第一個
   例如「3c學習按摩」→ [{ type:"category", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
-- 多個關鍵字範例：
+- 多個關鍵字範例（假設自訂類別含「學習」、「spa」、「餐飲」，但不含「午餐」、「咖啡」）：
   「學習與spa」→ [{ type:"category", value:"學習" }, { type:"category", value:"spa" }]
   「按摩和咖啡」→ [{ type:"nameKeyword", value:"按摩" }, { type:"nameKeyword", value:"咖啡" }]
+  「午餐花了多少」→ [{ type:"nameKeyword", value:"午餐", expandedKeywords:["午餐","午飯","中餐","便當","套餐"] }]
   「spa和餐飲」→ [{ type:"category", value:"spa" }, { type:"category", value:"餐飲" }]
-  「3c學習按摩」→ [{ type:"category", value:"3C" }, { type:"category", value:"學習" }, { type:"nameKeyword", value:"按摩" }]
 - 沒有特定關鍵字（查全部）時設為 []
 
 title 規則：
@@ -746,6 +750,21 @@ title 補充規則（analysis 時）：
   }
 
   // Step 3 — 回傳結果
+  if (effectiveQueryType === 'analysis_full') {
+    console.log('[query-expenses] analysis_full 回傳:', JSON.stringify({
+      keyword,
+      total,
+      grandTotal,
+      keywordCategory,
+      categoryTotal,
+      ratioOfGrand,
+      ratioOfCategory,
+      compareTotal,
+      currentLabel,
+      previousLabel,
+      itemsCount: items.length,
+    }))
+  }
   console.log('[query-expenses] 回傳 response:', JSON.stringify({
     effectiveQueryType,
     total,
