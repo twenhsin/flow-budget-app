@@ -12,14 +12,11 @@
 
     <!-- Result state -->
     <template v-else>
-      <!-- Header (sticky) -->
+      <!-- Header -->
       <div class="qr-header">
         <div class="qr-title" v-html="result.title" />
         <div class="qr-sub">{{ formattedRange }}</div>
       </div>
-
-      <!-- Scrollable content: summary + list -->
-      <div class="qr-content">
 
       <!-- Summary area -->
       <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio'" class="qr-total">
@@ -41,48 +38,41 @@
         </div>
       </div>
       <div v-else-if="result.queryType === 'analysis_ratio'" class="qr-ratio-summary">
-        <div class="item-card ratio-card">
-          <template v-for="(ri, idx) in (result.ratioItems ?? [])" :key="ri.keyword">
-            <div :class="['ratio-item', idx > 0 ? 'ratio-item-divider' : '']">
-              <template v-if="ri.keywordTotal === 0">
-                <div class="ratio-no-data">{{ ri.keyword }}：本期無此消費</div>
-              </template>
-              <template v-else>
+        <template v-for="(ri, idx) in (result.ratioItems ?? [])" :key="ri.keyword">
+          <div :class="['ratio-keyword-group', idx > 0 ? 'ratio-keyword-gap' : '']">
+            <template v-if="ri.keywordTotal === 0">
+              <div class="ratio-no-data">{{ ri.keyword }}：本期無此消費</div>
+            </template>
+            <template v-else>
+              <div class="ratio-block">
                 <div class="ratio-block-header">
-                  <span class="ratio-block-label">{{ ri.keyword }}佔比</span>
+                  <span class="ratio-block-label">總消費佔比</span>
+                  <span class="ratio-block-pct">{{ ri.ratioOfGrand }}%</span>
                 </div>
-                <div class="ratio-bar-wrap">
-                  <div class="ratio-bar-base"></div>
-                  <div
-                    v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword"
-                    class="ratio-bar-mid"
-                    :style="{
-                      width: Math.min(ri.grandTotal > 0 ? ri.categoryTotal / ri.grandTotal * 100 : 0, 100) + '%',
-                      background: catColor(ri.keywordCategory)
-                    }"
-                  ></div>
-                  <div
-                    class="ratio-bar-front"
-                    :style="{ width: Math.min(ri.ratioOfGrand, 100) + '%' }"
-                  ></div>
+                <div class="ratio-bar-bg">
+                  <div class="ratio-bar-fill" :style="{ width: Math.min(ri.ratioOfGrand, 100) + '%' }" />
                 </div>
                 <div class="ratio-stats-row">
                   <span class="ratio-stat">總消費：{{ formatAmount(ri.grandTotal) }}</span>
-                  <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-stat">
-                    <span class="ratio-dot" :style="{ background: catColor(ri.keywordCategory) }"></span>{{ ri.keywordCategory }}：{{ formatAmount(ri.categoryTotal) }}
-                  </span>
-                  <span class="ratio-stat">
-                    <span class="ratio-dot ratio-dot-accent"></span>{{ ri.keyword }}：{{ formatAmount(ri.keywordTotal) }}
-                  </span>
+                  <span class="ratio-stat">{{ ri.keyword }}消費：{{ formatAmount(ri.keywordTotal) }}</span>
                 </div>
-                <div class="ratio-pct-row">
-                  <span class="ratio-pct-stat">總消費佔比：{{ ri.ratioOfGrand }}%</span>
-                  <span v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-pct-stat">{{ ri.keywordCategory }}佔比：{{ ri.ratioOfCategory }}%</span>
+              </div>
+              <div v-if="ri.keywordCategory && ri.keywordCategory !== ri.keyword" class="ratio-block ratio-block-gap">
+                <div class="ratio-block-header">
+                  <span class="ratio-block-label">{{ ri.keywordCategory }}消費佔比</span>
+                  <span class="ratio-block-pct">{{ ri.ratioOfCategory }}%</span>
                 </div>
-              </template>
-            </div>
-          </template>
-        </div>
+                <div class="ratio-bar-bg">
+                  <div class="ratio-bar-fill" :style="{ width: Math.min(ri.ratioOfCategory, 100) + '%' }" />
+                </div>
+                <div class="ratio-stats-row">
+                  <span class="ratio-stat">{{ ri.keywordCategory }}消費：{{ formatAmount(ri.categoryTotal) }}</span>
+                  <span class="ratio-stat">{{ ri.keyword }}消費：{{ formatAmount(ri.keywordTotal) }}</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -368,8 +358,7 @@
           </svg>
         </div>
       </template>
-    </div><!-- end qr-body -->
-      </div><!-- end qr-content -->
+    </div>
     </template><!-- end v-else result -->
 
     <!-- Bottom input bar -->
@@ -885,24 +874,10 @@ const monthlyBars = computed(() => {
   flex: 1;
 }
 
-/* Header (sticky) */
+/* Header */
 .qr-header {
   flex-shrink: 0;
-  padding: 24px 24px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(255, 250, 240, 0.96);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-/* Scrollable content wrapper */
-.qr-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  padding: 24px 24px 0;
   position: relative;
   z-index: 1;
 }
@@ -961,7 +936,13 @@ const monthlyBars = computed(() => {
 
 /* Body */
 .qr-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 0 24px 24px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Card */
@@ -1196,27 +1177,34 @@ const monthlyBars = computed(() => {
 
 /* Ratio summary */
 .qr-ratio-summary {
-  padding: 24px 24px 0;
+  flex-shrink: 0;
+  padding: 24px 24px 24px;
+  position: relative;
+  z-index: 1;
 }
 
-.ratio-card {
-  padding: 0;
-}
-
-.ratio-item {
-  padding: 16px;
-}
-
-.ratio-item-divider {
-  border-top: 0.5px solid var(--border);
+.ratio-keyword-gap {
+  margin-top: 24px;
 }
 
 .ratio-no-data {
   font-size: 13px;
   color: var(--text-soft);
+  padding: 4px 0;
+}
+
+.ratio-block {
+  /* spacing handled by children */
+}
+
+.ratio-block-gap {
+  margin-top: 16px;
 }
 
 .ratio-block-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   margin-bottom: 4px;
 }
 
@@ -1225,46 +1213,36 @@ const monthlyBars = computed(() => {
   color: var(--text-soft);
 }
 
-/* Three-layer bar */
-.ratio-bar-wrap {
-  position: relative;
+.ratio-block-pct {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.ratio-bar-bg {
+  background: #E8E0D8;
+  border-radius: 4px;
   height: 8px;
-  border-radius: 99px;
   overflow: hidden;
 }
 
-.ratio-bar-base {
-  position: absolute;
-  inset: 0;
-  background: #E8E0D8;
-  border-radius: 99px;
-}
-
-.ratio-bar-mid {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.4s ease;
-}
-
-.ratio-bar-front {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  border-radius: 99px;
+.ratio-bar-fill {
   background: var(--accent);
+  border-radius: 4px;
+  height: 8px;
   transition: width 0.4s ease;
+  min-width: 2px;
 }
 
 .ratio-stats-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   margin-top: 4px;
-  align-items: center;
+}
+
+.ratio-list-gap {
+  margin-top: 10px;
 }
 
 .ratio-stat {
@@ -1272,39 +1250,6 @@ const monthlyBars = computed(() => {
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.ratio-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.ratio-dot-accent {
-  background: var(--accent);
-}
-
-.ratio-pct-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.ratio-pct-stat {
-  font-size: 10px;
-  color: var(--text-soft);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.ratio-list-gap {
-  margin-top: 10px;
 }
 
 /* Compare summary */
