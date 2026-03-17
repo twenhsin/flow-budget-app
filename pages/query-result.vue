@@ -9,13 +9,12 @@
 
     <!-- Result state -->
     <template v-else>
-      <div class="qr-scroll">
       <!-- Header -->
       <div class="qr-header">
         <div class="qr-title" v-html="result.title" />
         <div class="qr-sub">{{ formattedRange }}</div>
       </div>
-
+      <div class="qr-scroll">
       <!-- Summary area -->
       <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio' && result.queryType !== 'analysis_full'" class="qr-total">
         <span class="qr-total-label">總計</span>
@@ -89,7 +88,7 @@
         <!-- Block 2: Ratio bar -->
         <div v-if="result.total > 0" class="af-block">
           <div class="ratio-block-header">
-            <span class="ratio-block-label" style="font-size:16px;font-weight:600">{{ result.keyword ?? '' }}佔比</span>
+            <span class="ratio-block-label" style="font-size:16px;font-weight:400">{{ result.keyword ?? '' }}佔比</span>
           </div>
           <div class="ratio-bar-wrap">
             <div class="ratio-bar-base"></div>
@@ -867,11 +866,11 @@ const monthlyBars = computed(() => {
 
 /* Header */
 .qr-header {
+  flex-shrink: 0;
   padding: 24px 24px 0;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background-color: #fffaf0;
+  position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
 .qr-title {
@@ -1484,7 +1483,7 @@ const monthlyBars = computed(() => {
 
 .af-label {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--text-soft);
   margin-bottom: 2px;
 }
