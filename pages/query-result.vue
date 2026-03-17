@@ -1287,6 +1287,7 @@ const monthlyBars = computed(() => {
 
 .ratio-stat {
   font-size: 11px;
+  font-weight: 600;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
