@@ -16,7 +16,7 @@
       </div>
 
       <!-- Summary area -->
-      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio'" class="qr-total">
+      <div v-if="result.queryType !== 'top_n' && result.queryType !== 'analysis_compare' && result.queryType !== 'analysis_category_change' && result.queryType !== 'analysis_ratio' && result.queryType !== 'analysis_full'" class="qr-total">
         <span class="qr-total-label">總計</span>
         <span class="qr-total-amount">-{{ formatAmount(result.total) }}</span>
       </div>
@@ -77,6 +77,62 @@
             </template>
           </div>
         </template>
+      </div>
+      <div v-else-if="result.queryType === 'analysis_full'" class="qr-af-summary">
+        <!-- Block 1: Current total -->
+        <div class="af-block">
+          <div class="af-label">{{ result.currentLabel ?? '本月' }}總計</div>
+          <div class="af-amount">-<span style="font-weight:700;color:#8B5E3C;font-family:'Chivo Mono',monospace;font-size:40px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;">{{ formatAmount(result.total) }}</span></div>
+        </div>
+        <!-- Block 2: Ratio bar -->
+        <div v-if="result.total > 0" class="af-block">
+          <div class="ratio-block-header">
+            <span class="ratio-block-label">{{ result.keyword ?? '' }}佔比</span>
+          </div>
+          <div class="ratio-bar-wrap">
+            <div class="ratio-bar-base"></div>
+            <div
+              v-if="result.keywordCategory && result.keywordCategory !== result.keyword"
+              class="ratio-bar-mid"
+              :style="{
+                width: Math.min(result.grandTotal! > 0 ? (result.categoryTotal! / result.grandTotal!) * 100 : 0, 100) + '%',
+                background: catColor(result.keywordCategory)
+              }"
+            ></div>
+            <div class="ratio-bar-front" :style="{ width: Math.min(result.ratioOfGrand ?? 0, 100) + '%' }"></div>
+          </div>
+          <div class="ratio-stats-row">
+            <span class="ratio-stat">總消費：<span style="font-weight:600">{{ formatAmount(result.grandTotal ?? 0) }}</span></span>
+            <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">
+              <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(result.keywordCategory) }"></span>{{ result.keywordCategory }}：<span style="font-weight:600">{{ formatAmount(result.categoryTotal ?? 0) }}</span>
+            </span>
+            <span class="ratio-stat">
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ result.keyword ?? '' }}：<span style="font-weight:600">{{ formatAmount(result.total) }}</span>
+            </span>
+          </div>
+          <div class="ratio-stats-row">
+            <span class="ratio-stat">總消費佔比：<span style="font-weight:600">{{ result.ratioOfGrand ?? 0 }}%</span></span>
+            <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}佔比：<span style="font-weight:600">{{ result.ratioOfCategory ?? 0 }}%</span></span>
+          </div>
+        </div>
+        <!-- Block 3: Compare -->
+        <div class="af-block">
+          <div class="af-label">與{{ result.previousLabel ?? '上期' }}比較</div>
+          <div class="af-compare-row">
+            <div class="af-compare-col">
+              <span class="compare-sum-label">{{ result.currentLabel ?? '本期' }}</span>
+              <span class="compare-sum-amount">-{{ formatAmount(result.total) }}</span>
+            </div>
+            <div class="compare-sum-vs">vs</div>
+            <div class="af-compare-col">
+              <span class="compare-sum-label">{{ result.previousLabel ?? '上期' }}</span>
+              <span class="compare-sum-amount compare-sum-prev">-{{ formatAmount(result.compareTotal ?? 0) }}</span>
+            </div>
+            <div class="compare-sum-diff" :class="afCompareDiff >= 0 ? 'change-up' : 'change-down'">
+              {{ afCompareDiff >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(afCompareDiff)) }}
+            </div>
+          </div>
+        </div>
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -241,6 +297,28 @@
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
           <div v-if="ri.items.length === 0" class="item-empty">本期無此消費</div>
+        </div>
+      </template>
+
+      <!-- analysis_full: item list (Block 4) -->
+      <template v-else-if="result.queryType === 'analysis_full'">
+        <div class="item-card">
+          <div class="group-header">
+            <span class="group-label">消費明細</span>
+            <span class="group-total">{{ result.items.length > 0 ? '-' + formatAmount(result.total) : '—' }}</span>
+          </div>
+          <div class="group-divider" />
+          <div v-for="item in result.items" :key="item.id" class="item-row">
+            <div class="item-icon" :style="{ background: catColor(item.category) }">
+              <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
+            </div>
+            <div class="item-info">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-cat">{{ item.category }}</span>
+            </div>
+            <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
+          </div>
+          <div v-if="result.items.length === 0" class="item-empty">本期無此消費</div>
         </div>
       </template>
 
@@ -424,7 +502,7 @@ interface GroupEntry {
 interface QueryResult {
   title: string
   queryType: 'total' | 'list' | 'ranking' | 'monthly' | 'grouped' | 'top_n'
-    | 'analysis_trend' | 'analysis_compare' | 'analysis_peak' | 'analysis_category_change' | 'analysis_ratio'
+    | 'analysis_trend' | 'analysis_compare' | 'analysis_peak' | 'analysis_category_change' | 'analysis_ratio' | 'analysis_full'
   total: number
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: any[]
@@ -585,6 +663,7 @@ const topCatSectionLabel = computed(() =>
 
 // ── Analysis ───────────────────────────────────────────────────────────────────
 const compareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
+const afCompareDiff = computed(() => result.value.total - (result.value.compareTotal ?? 0))
 
 // Trend chart
 const trendNiceMax = computed(() => {
@@ -1357,6 +1436,46 @@ const monthlyBars = computed(() => {
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* Analysis full summary */
+.qr-af-summary {
+  flex-shrink: 0;
+  padding: 16px 24px 16px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.af-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.af-label {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 2px;
+}
+
+.af-amount {
+  line-height: 1;
+}
+
+.af-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.af-compare-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* Bottom input */

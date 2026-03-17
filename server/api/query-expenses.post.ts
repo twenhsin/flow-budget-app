@@ -83,15 +83,15 @@ ${dateHints}
 {
   "dateFrom": "YYYY-MM-DD",
   "dateTo": "YYYY-MM-DD",
-  "compareFrom": "YYYY-MM-DD（比較類分析時填前期起始，否則省略此欄）",
-  "compareTo": "YYYY-MM-DD（比較類分析時填前期結束，否則省略此欄）",
-  "currentLabel": "本月（本期時間描述，比較類分析時使用）",
-  "previousLabel": "上月（前期時間描述，比較類分析時使用）",
+  "compareFrom": "YYYY-MM-DD（比較類分析或 analysis_full 時填前期起始，否則省略此欄）",
+  "compareTo": "YYYY-MM-DD（比較類分析或 analysis_full 時填前期結束，否則省略此欄）",
+  "currentLabel": "本月（本期時間描述，比較類分析或 analysis_full 時使用）",
+  "previousLabel": "上月（前期時間描述，比較類分析或 analysis_full 時使用）",
   "queries": [
     { "type": "category", "value": "類別名稱" },
     { "type": "nameKeyword", "value": "品項關鍵字", "expandedKeywords": ["原始詞", "同義詞1", "變體2"] }
   ],
-  "queryType": "total | list | ranking | monthly | grouped | top_n | analysis_trend | analysis_compare | analysis_peak | analysis_category_change | analysis_ratio",
+  "queryType": "total | list | ranking | monthly | grouped | top_n | analysis_trend | analysis_compare | analysis_peak | analysis_category_change | analysis_ratio | analysis_full",
   "n": 3,
   "title": "精確的繁體中文結果頁標題"
 }
@@ -132,15 +132,6 @@ queryType 規則（請嚴格遵守，優先順序由上到下）：
   ⚠️ 重要：「3C消費」、「3c花費」是類別查詢，不是 top_n！只有「前三項」、「前3筆」、「top3」才代表數量。「3」或「3C」出現在類別名稱中時，絕對不是數量
   範例：「最高消費」→ top_n, n:1 ｜ 「花最多的是什麼」→ top_n, n:1 ｜ 「前三項消費」→ top_n, n:3
   反例（不是 top_n）：「3C消費」→ list/grouped ｜ 「3c花了多少」→ total
-- ranking：僅用於「各類別排行」、「各類別佔比」、「消費分佈」、「哪個類別花最多」等需要列出所有類別完整排名的查詢。ranking 絕不適用於單筆消費項目的查詢
-  範例：「消費排行」→ ranking ｜ 「各類別佔比」→ ranking ｜ 「本月支出分佈」→ ranking
-- total：問總金額、花多少、共花了多少
-- list：問明細、有哪些、列出所有紀錄
-- monthly：問逐月、每個月、各月比較、月趨勢
-- analysis_trend：用於「每週消費趨勢」、「各週花多少」、「週消費變化」等以週為單位的趨勢分析
-- analysis_compare：用於「這個月和上個月比」、「本月 vs 上月」、「與上期比較」等跨期總額比較。需填 compareFrom/compareTo（前期日期範圍）、currentLabel/previousLabel（各期名稱）
-- analysis_peak：用於「哪天消費最高」、「消費高峰日」、「最多花了哪天」等單日高低峰分析
-- analysis_category_change：用於「類別消費有沒有變化」、「哪個類別增加最多」、「各類別這個月比上個月」等類別跨期變化分析。需填 compareFrom/compareTo、currentLabel/previousLabel
 - analysis_ratio：用於「某項目佔比」、「比例」、「占幾%」、「占多少」、「花了多少比例」等消費佔比查詢。
   ⚠️ 重要：queries 欄位必填且不可為空陣列，必須包含要計算佔比的品項或類別關鍵字
   ⚠️ 重要：「比較」、「比上月」、「比上週」→ analysis_compare，不是 analysis_ratio！只有「佔比」、「比例」、「占幾%」才是 analysis_ratio
@@ -149,7 +140,22 @@ queryType 規則（請嚴格遵守，優先順序由上到下）：
     「飲料占本月消費多少」→ queryType:"analysis_ratio", queries:[{"type":"category","value":"飲料"}]
     「美妝佔比多少」→ queryType:"analysis_ratio", queries:[{"type":"category","value":"美妝"}]
     「學習花費占比」→ queryType:"analysis_ratio", queries:[{"type":"category","value":"學習"}]
+- analysis_compare：用於「這個月和上個月比」、「本月 vs 上月」、「與上期比較」、「比上週多少」、「增加了多少」、「減少了多少」等跨期總額比較。需填 compareFrom/compareTo（前期日期範圍）、currentLabel/previousLabel（各期名稱）
+- analysis_trend：用於「每週消費趨勢」、「各週花多少」、「週消費變化」等以週為單位的趨勢分析
+- analysis_full（模糊分析意圖）：用於「幫我分析」、「分析一下」、「消費情況」、「消費狀況」、「怎麼樣」等模糊分析意圖，且 queries 必須有明確關鍵字（品項或類別）。同時填入 compareFrom/compareTo（前一個同等期間），currentLabel/previousLabel（如「本月」、「上月」）
+  ⚠️ 重要：queries 不可為空，必須有明確關鍵字
+  ⚠️ 重要：無關鍵字的全局查詢（如「本月消費怎麼樣」）→ 改用 total 或 list，不是 analysis_full
+  範例：「本月咖啡消費怎麼樣」→ analysis_full ｜ 「幫我分析餐費」→ analysis_full ｜ 「這個月零食花費情況」→ analysis_full
+  反例：「本月消費怎麼樣」（無明確關鍵字）→ total ｜ 「這個月花了多少」→ total
 - grouped：queries 有多項時優先使用，每個 query 各自成一組
+  範例：「本月咖啡和餐費」→ grouped
+- list：問明細、有哪些、列出所有紀錄，queries 只有 1 項時使用
+- ranking（最低優先）：僅用於「各類別排行」、「各類別佔比」、「消費分佈」、「哪個類別花最多」等需要列出所有類別完整排名的查詢。ranking 絕不適用於單筆消費項目的查詢
+  範例：「消費排行」→ ranking ｜ 「各類別佔比」→ ranking ｜ 「本月支出分佈」→ ranking
+- total：問總金額、花多少、共花了多少
+- monthly：問逐月、每個月、各月比較、月趨勢
+- analysis_peak：用於「哪天消費最高」、「消費高峰日」、「最多花了哪天」等單日高低峰分析
+- analysis_category_change：用於「類別消費有沒有變化」、「哪個類別增加最多」、「各類別這個月比上個月」等類別跨期變化分析。需填 compareFrom/compareTo、currentLabel/previousLabel
 
 n 規則（僅 top_n 時有效）：
 - 從用戶輸入解析數字：「前三項」→ 3，「最高五筆」→ 5，「最貴的」→ 1，「最高消費」→ 1
@@ -168,7 +174,8 @@ title 補充規則（analysis 時）：
 - analysis_compare：currentLabel + 「 vs 」 + previousLabel + 「消費比較」，例：「本月 vs 上月消費比較」
 - analysis_peak：時間詞 + 「消費高峰日」，例：「本月消費高峰日」
 - analysis_category_change：時間詞 + 「各類別消費變化」，例：「本月各類別消費變化」
-- analysis_ratio：時間詞 + <span class="title-keyword">關鍵字</span> + 「消費佔比」，例：「本月 <span class="title-keyword">咖啡</span> 消費佔比」`,
+- analysis_ratio：時間詞 + <span class="title-keyword">關鍵字</span> + 「消費佔比」，例：「本月 <span class="title-keyword">咖啡</span> 消費佔比」
+- analysis_full：時間詞 + <span class="title-keyword">關鍵字</span> + 「消費分析」，例：「本月 <span class="title-keyword">咖啡</span> 消費分析」`,
       },
     ],
     max_tokens: 800,
@@ -393,6 +400,46 @@ title 補充規則（analysis 時）：
         })
       }
     }
+    else if (effectiveQueryType === 'analysis_full') {
+      const q = queryItems[0]
+      const kws: string[] = Array.isArray(q?.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q?.value ?? '']
+      keyword = q?.value ?? ''
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allInRange = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+        const d = r.created_at.slice(0, 10)
+        return d >= dateFrom && d < dateTo
+      })
+      grandTotal = sumAmount(allInRange)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const kItems = allInRange.filter((r: any) => {
+        if (q?.type === 'category') return r.category === q.value
+        return kws.some((kw: string) => r.name.toLowerCase().includes(kw.toLowerCase()))
+      })
+      items = kItems
+      if (kItems.length > 0) {
+        const catCounts: Record<string, number> = {}
+        for (const r of kItems) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
+        keywordCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        categoryTotal = sumAmount(allInRange.filter((r: any) => r.category === keywordCategory))
+      }
+      const kTotal = sumAmount(kItems)
+      ratioOfGrand = grandTotal > 0 ? Math.round((kTotal / grandTotal) * 1000) / 10 : 0
+      ratioOfCategory = categoryTotal > 0 ? Math.round((kTotal / categoryTotal) * 1000) / 10 : 0
+      if (compareFrom && compareToDate) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prevAll = (guestExpenses as any[]).filter((r: { created_at: string }) => {
+          const d = r.created_at.slice(0, 10)
+          return d >= compareFrom && d < compareToDate!
+        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prevKItems = prevAll.filter((r: any) => {
+          if (q?.type === 'category') return r.category === q.value
+          return kws.some((kw: string) => r.name.toLowerCase().includes(kw.toLowerCase()))
+        })
+        compareTotal = sumAmount(prevKItems)
+      }
+    }
     else if (isAnalysisType) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       items = (guestExpenses as any[]).filter((r: { created_at: string }) => {
@@ -521,6 +568,72 @@ title 補充規則（analysis 時）：
           ratioOfCategory: kCategoryTotal > 0 ? Math.round((kTotal / kCategoryTotal) * 1000) / 10 : 0,
           items: kItems,
         })
+      }
+    }
+    else if (effectiveQueryType === 'analysis_full') {
+      const q = queryItems[0]
+      const kws: string[] = Array.isArray(q?.expandedKeywords) && q.expandedKeywords.length > 0 ? q.expandedKeywords : [q?.value ?? '']
+      keyword = q?.value ?? ''
+      // Grand total
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: allData } = await (client as any)
+        .from('expenses')
+        .select('amount')
+        .eq('user_id', user.id)
+        .gte('created_at', dateFrom)
+        .lt('created_at', dateTo)
+      grandTotal = sumAmount(allData ?? [])
+      // Keyword items
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let kQuery = (client as any)
+        .from('expenses')
+        .select('id, name, amount, category, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', dateFrom)
+        .lt('created_at', dateTo)
+      if (q?.type === 'category') {
+        kQuery = kQuery.eq('category', q.value)
+      }
+      else {
+        kQuery = kQuery.or(kws.map((kw: string) => `name.ilike.%${kw}%`).join(','))
+      }
+      const { data: kData, error: kError } = await kQuery.order('created_at', { ascending: false })
+      if (kError) console.error('[query-expenses] analysis_full keyword 查詢失敗:', kError)
+      items = kData ?? []
+      const kTotal = sumAmount(items)
+      if (items.length > 0) {
+        const catCounts: Record<string, number> = {}
+        for (const r of items) catCounts[r.category] = (catCounts[r.category] ?? 0) + 1
+        keywordCategory = Object.entries(catCounts).sort(([, a], [, b]) => b - a)[0][0]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: catData } = await (client as any)
+          .from('expenses')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('category', keywordCategory)
+          .gte('created_at', dateFrom)
+          .lt('created_at', dateTo)
+        categoryTotal = sumAmount(catData ?? [])
+      }
+      ratioOfGrand = grandTotal > 0 ? Math.round((kTotal / grandTotal) * 1000) / 10 : 0
+      ratioOfCategory = categoryTotal > 0 ? Math.round((kTotal / categoryTotal) * 1000) / 10 : 0
+      if (compareFrom && compareToDate) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let prevQuery = (client as any)
+          .from('expenses')
+          .select('amount')
+          .eq('user_id', user.id)
+          .gte('created_at', compareFrom)
+          .lt('created_at', compareToDate)
+        if (q?.type === 'category') {
+          prevQuery = prevQuery.eq('category', q.value)
+        }
+        else {
+          prevQuery = prevQuery.or(kws.map((kw: string) => `name.ilike.%${kw}%`).join(','))
+        }
+        const { data: prevData, error: prevError } = await prevQuery
+        if (prevError) console.error('[query-expenses] analysis_full compare 查詢失敗:', prevError)
+        compareTotal = sumAmount(prevData ?? [])
       }
     }
     else if (isAnalysisType) {
