@@ -84,6 +84,7 @@
           <div class="af-label">{{ result.currentLabel ?? '本月' }}總計</div>
           <div class="af-amount"><span style="font-weight:700;color:#8B5E3C;font-family:'Chivo Mono',monospace;font-size:40px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;">-{{ formatAmount(result.total) }}</span></div>
         </div>
+        <hr class="af-divider">
         <!-- Block 2: Ratio bar -->
         <div v-if="result.total > 0" class="af-block">
           <div class="ratio-block-header">
@@ -115,6 +116,7 @@
             <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}佔比：<span style="font-weight:600">{{ result.ratioOfCategory ?? 0 }}%</span></span>
           </div>
         </div>
+        <hr v-if="result.total > 0" class="af-divider">
         <!-- Block 3: Compare -->
         <div class="af-block">
           <div class="af-label">與{{ result.previousLabel ?? '上期' }}比較</div>
@@ -133,6 +135,7 @@
             </div>
           </div>
         </div>
+        <hr class="af-divider">
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -1447,6 +1450,12 @@ const monthlyBars = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.af-divider {
+  border: none;
+  border-top: 1px solid var(--text);
+  margin: 0;
 }
 
 .af-block {
