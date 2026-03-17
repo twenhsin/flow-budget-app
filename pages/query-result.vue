@@ -79,63 +79,59 @@
         </template>
       </div>
       <div v-else-if="result.queryType === 'analysis_full'" class="qr-af-summary">
-        <!-- Block 1: Current total -->
-        <div class="af-block" style="flex-direction:row;justify-content:space-between;align-items:baseline;">
-          <div class="af-label">{{ result.currentLabel ?? '本月' }}總計</div>
-          <div class="af-amount"><span style="font-weight:700;color:#8B5E3C;font-family:'Chivo Mono',monospace;font-size:40px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;">-{{ formatAmount(result.total) }}</span></div>
-        </div>
-        <hr class="af-divider">
-        <!-- Block 2: Ratio bar -->
-        <div v-if="result.total > 0" class="af-block">
-          <div class="ratio-block-header">
-            <span class="ratio-block-label" style="font-size:16px;font-weight:400">{{ result.keyword ?? '' }}佔比</span>
-          </div>
-          <div class="ratio-bar-wrap">
-            <div class="ratio-bar-base"></div>
-            <div
-              v-if="result.keywordCategory && result.keywordCategory !== result.keyword"
-              class="ratio-bar-mid"
-              :style="{
-                width: Math.min(result.grandTotal! > 0 ? (result.categoryTotal! / result.grandTotal!) * 100 : 0, 100) + '%',
-                background: catColor(result.keywordCategory)
-              }"
-            ></div>
-            <div class="ratio-bar-front" :style="{ width: Math.min(result.ratioOfGrand ?? 0, 100) + '%' }"></div>
-          </div>
-          <div class="ratio-stats-row">
-            <span class="ratio-stat">總消費：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(result.grandTotal ?? 0) }}</span></span>
-            <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">
-              <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(result.keywordCategory) }"></span>{{ result.keywordCategory }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(result.categoryTotal ?? 0) }}</span>
-            </span>
-            <span class="ratio-stat">
-              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ result.keyword ?? '' }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(result.total) }}</span>
-            </span>
-          </div>
-          <div class="ratio-stats-row">
-            <span class="ratio-stat">總消費佔比：<span style="font-weight:600;color:#8B5E3C">{{ result.ratioOfGrand ?? 0 }}%</span></span>
-            <span v-if="result.keywordCategory && result.keywordCategory !== result.keyword" class="ratio-stat">{{ result.keywordCategory }}佔比：<span style="font-weight:600;color:#8B5E3C">{{ result.ratioOfCategory ?? 0 }}%</span></span>
-          </div>
-        </div>
-        <hr v-if="result.total > 0" class="af-divider">
-        <!-- Block 3: Compare -->
-        <div class="af-block">
-          <div class="af-label">與{{ result.previousLabel ?? '上期' }}比較</div>
-          <div class="af-compare-row">
-            <div class="af-compare-col">
-              <span class="compare-sum-label">{{ result.currentLabel ?? '本期' }}</span>
-              <span class="compare-sum-amount">-{{ formatAmount(result.total) }}</span>
+        <template v-for="(fi, fIdx) in (result.fullItems ?? [])" :key="fi.keyword">
+          <hr v-if="fIdx > 0" class="af-divider">
+          <!-- Ratio bar block -->
+          <div v-if="fi.keywordTotal > 0" class="af-block">
+            <div class="ratio-block-header">
+              <span class="ratio-block-label" style="font-size:16px;font-weight:400">{{ fi.keyword }}佔比</span>
             </div>
-            <div class="compare-sum-vs">vs</div>
-            <div class="af-compare-col">
-              <span class="compare-sum-label">{{ result.previousLabel ?? '上期' }}</span>
-              <span class="compare-sum-amount compare-sum-prev" style="color:#8B5E3C">-{{ formatAmount(result.compareTotal ?? 0) }}</span>
+            <div class="ratio-bar-wrap">
+              <div class="ratio-bar-base"></div>
+              <div
+                v-if="fi.keywordCategory && fi.keywordCategory !== fi.keyword"
+                class="ratio-bar-mid"
+                :style="{
+                  width: Math.min(fi.grandTotal > 0 ? (fi.categoryTotal / fi.grandTotal) * 100 : 0, 100) + '%',
+                  background: catColor(fi.keywordCategory)
+                }"
+              ></div>
+              <div class="ratio-bar-front" :style="{ width: Math.min(fi.ratioOfGrand, 100) + '%' }"></div>
             </div>
-            <div class="compare-sum-diff" :class="afCompareDiff >= 0 ? 'change-up' : 'change-down'">
-              {{ afCompareDiff >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(afCompareDiff)) }}
+            <div class="ratio-stats-row">
+              <span class="ratio-stat">總消費：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(fi.grandTotal) }}</span></span>
+              <span v-if="fi.keywordCategory && fi.keywordCategory !== fi.keyword" class="ratio-stat">
+                <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(fi.keywordCategory) }"></span>{{ fi.keywordCategory }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(fi.categoryTotal) }}</span>
+              </span>
+              <span class="ratio-stat">
+                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ fi.keyword }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(fi.keywordTotal) }}</span>
+              </span>
+            </div>
+            <div class="ratio-stats-row">
+              <span class="ratio-stat">總消費佔比：<span style="font-weight:600;color:#8B5E3C">{{ fi.ratioOfGrand }}%</span></span>
+              <span v-if="fi.keywordCategory && fi.keywordCategory !== fi.keyword" class="ratio-stat">{{ fi.keywordCategory }}佔比：<span style="font-weight:600;color:#8B5E3C">{{ fi.ratioOfCategory }}%</span></span>
             </div>
           </div>
-        </div>
-        <hr class="af-divider">
+          <div v-else class="ratio-no-data">{{ fi.keyword }}：本期無此消費</div>
+          <!-- Compare block -->
+          <div v-if="fi.keywordTotal > 0" class="af-block">
+            <div class="af-label">與{{ result.previousLabel ?? '上期' }}比較</div>
+            <div class="af-compare-row">
+              <div class="af-compare-col">
+                <span class="compare-sum-label">{{ result.currentLabel ?? '本期' }}</span>
+                <span class="compare-sum-amount">-{{ formatAmount(fi.keywordTotal) }}</span>
+              </div>
+              <div class="compare-sum-vs">vs</div>
+              <div class="af-compare-col">
+                <span class="compare-sum-label">{{ result.previousLabel ?? '上期' }}</span>
+                <span class="compare-sum-amount compare-sum-prev" style="color:#8B5E3C">-{{ formatAmount(fi.compareTotal) }}</span>
+              </div>
+              <div class="compare-sum-diff" :class="(fi.keywordTotal - fi.compareTotal) >= 0 ? 'change-up' : 'change-down'">
+                {{ (fi.keywordTotal - fi.compareTotal) >= 0 ? '▲' : '▼' }} {{ formatAmount(Math.abs(fi.keywordTotal - fi.compareTotal)) }}
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
       <div v-else class="qr-topn-summary">
         <div v-if="result.topItems?.length" class="topn-summary-line">
@@ -306,15 +302,20 @@
         </div>
       </template>
 
-      <!-- analysis_full: item list (Block 4) -->
+      <!-- analysis_full: item list per keyword -->
       <template v-else-if="result.queryType === 'analysis_full'">
-        <div class="item-card">
+        <div
+          v-for="(fi, fIdx) in (result.fullItems ?? [])"
+          :key="fi.keyword"
+          class="item-card"
+          :class="{ 'group-gap': fIdx > 0 }"
+        >
           <div class="group-header">
-            <span class="group-label">消費明細</span>
-            <span class="group-total">{{ result.items.length > 0 ? '-' + formatAmount(result.total) : '—' }}</span>
+            <span class="group-label">{{ fi.keyword }}</span>
+            <span class="group-total">{{ fi.keywordTotal > 0 ? '-' + formatAmount(fi.keywordTotal) : '—' }}</span>
           </div>
           <div class="group-divider" />
-          <div v-for="item in result.items" :key="item.id" class="item-row">
+          <div v-for="item in fi.items" :key="item.id" class="item-row">
             <div class="item-icon" :style="{ background: catColor(item.category) }">
               <CatIcon :category="item.category" :size="14" :stroke-width="1.8" />
             </div>
@@ -325,7 +326,10 @@
             <span class="item-date">{{ formatDateShort(item.created_at) }}</span>
             <span class="item-amount">-{{ formatAmount(item.amount) }}</span>
           </div>
-          <div v-if="result.items.length === 0" class="item-empty">本期無此消費</div>
+          <div v-if="fi.items.length === 0" class="item-empty">本期無此消費</div>
+        </div>
+        <div v-if="!result.fullItems?.length" class="item-card">
+          <div class="item-empty">此期間無紀錄</div>
         </div>
       </template>
 
@@ -548,6 +552,18 @@ interface QueryResult {
     grandTotal: number
     ratioOfGrand: number
     ratioOfCategory: number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items: any[]
+  }[]
+  fullItems?: {
+    keyword: string
+    keywordTotal: number
+    keywordCategory: string
+    categoryTotal: number
+    grandTotal: number
+    ratioOfGrand: number
+    ratioOfCategory: number
+    compareTotal: number
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: any[]
   }[]
@@ -1238,7 +1254,7 @@ const monthlyBars = computed(() => {
 .ratio-bar-base {
   position: absolute;
   inset: 0;
-  background: #E8E0D8;
+  background: #e0ccba;
   border-radius: 99px;
 }
 
