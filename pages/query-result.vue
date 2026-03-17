@@ -877,7 +877,7 @@ const monthlyBars = computed(() => {
 /* Header */
 .qr-header {
   flex-shrink: 0;
-  padding: 48px 24px 0;
+  padding: 24px 24px 0;
   position: relative;
   z-index: 1;
 }
@@ -940,7 +940,7 @@ const monthlyBars = computed(() => {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 16px 16px;
+  padding: 0 24px 24px;
   position: relative;
   z-index: 1;
 }
