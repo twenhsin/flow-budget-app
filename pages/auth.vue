@@ -243,25 +243,25 @@ const handleSubmit = async () => {
   z-index: 1;
   width: 100%;
   max-width: 380px;
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--surface);
   backdrop-filter: blur(20px);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 36px 28px;
-  box-shadow: 0 8px 40px rgba(196, 98, 45, 0.12);
+  box-shadow: var(--shadow-modal);
 }
 
 .auth-title {
   font-family: 'Noto Serif TC', serif;
   font-size: 28px;
   font-weight: 300;
-  color: #5C3D2E;
+  color: var(--text-strong);
   text-align: center;
   margin-bottom: 4px;
 }
 
 .auth-sub {
-  font-size: 13px;
-  color: #B18272;
+  font-size: 12px;
+  color: var(--text-soft);
   text-align: center;
   margin-bottom: 28px;
 }
@@ -269,7 +269,7 @@ const handleSubmit = async () => {
 .auth-tabs {
   display: flex;
   background: rgba(224, 122, 79, 0.08);
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   padding: 3px;
   margin-bottom: 24px;
 }
@@ -279,16 +279,16 @@ const handleSubmit = async () => {
   padding: 8px;
   border: none;
   background: transparent;
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   font-family: 'Noto Sans TC', sans-serif;
   font-size: 14px;
-  color: #B18272;
+  color: var(--text-soft);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .auth-tab.active {
-  background: #E07A4F;
+  background: var(--accent);
   color: white;
   font-weight: 500;
 }
@@ -307,39 +307,39 @@ const handleSubmit = async () => {
 
 .field-label {
   font-size: 12px;
-  color: #B18272;
+  color: var(--text-soft);
   letter-spacing: 0.04em;
 }
 
 .field-input {
   padding: 12px 16px;
-  border: 1px solid rgba(224, 122, 79, 0.25);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 15px;
-  color: #3D2314;
+  font-size: 16px;
+  color: var(--text-strong);
   outline: none;
   transition: border-color 0.15s;
 }
 
 .field-input:focus {
-  border-color: #E07A4F;
+  border-color: var(--accent);
 }
 
 .field-input::placeholder {
-  color: #C4A090;
+  color: var(--text-soft);
 }
 
 .auth-error {
-  font-size: 13px;
-  color: #D04A20;
+  font-size: 12px;
+  color: var(--destructive);
   text-align: center;
 }
 
 .auth-success {
-  font-size: 13px;
-  color: #4A9060;
+  font-size: 12px;
+  color: var(--text-success);
   text-align: center;
   line-height: 1.5;
 }
@@ -348,11 +348,11 @@ const handleSubmit = async () => {
   margin-top: 4px;
   padding: 14px;
   border: none;
-  border-radius: 40px;
-  background: #E07A4F;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
   color: white;
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s;

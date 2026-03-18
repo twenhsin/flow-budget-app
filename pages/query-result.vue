@@ -99,17 +99,17 @@
               <div class="ratio-bar-front" :style="{ width: Math.min(fi.ratioOfGrand, 100) + '%' }"></div>
             </div>
             <div class="ratio-stats-row">
-              <span class="ratio-stat">總消費：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(fi.grandTotal) }}</span></span>
+              <span class="ratio-stat">總消費：<span style="font-weight:600;color:var(--text)">{{ formatAmount(fi.grandTotal) }}</span></span>
               <span v-if="fi.keywordCategory && fi.keywordCategory !== fi.keyword" class="ratio-stat">
-                <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(fi.keywordCategory) }"></span>{{ fi.keywordCategory }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(fi.categoryTotal) }}</span>
+                <span :style="{ display:'inline-block', width:'6px', height:'6px', borderRadius:'50%', marginRight:'2px', verticalAlign:'middle', background: catColor(fi.keywordCategory) }"></span>{{ fi.keywordCategory }}：<span style="font-weight:600;color:var(--text)">{{ formatAmount(fi.categoryTotal) }}</span>
               </span>
               <span class="ratio-stat">
-                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ fi.keyword }}：<span style="font-weight:600;color:#8B5E3C">{{ formatAmount(fi.keywordTotal) }}</span>
+                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:2px;vertical-align:middle;"></span>{{ fi.keyword }}：<span style="font-weight:600;color:var(--text)">{{ formatAmount(fi.keywordTotal) }}</span>
               </span>
             </div>
             <div class="ratio-stats-row">
-              <span class="ratio-stat">總消費佔比：<span style="font-weight:600;color:#8B5E3C">{{ fi.ratioOfGrand }}%</span></span>
-              <span v-if="fi.keywordCategory && fi.keywordCategory !== fi.keyword" class="ratio-stat">{{ fi.keywordCategory }}佔比：<span style="font-weight:600;color:#8B5E3C">{{ fi.ratioOfCategory }}%</span></span>
+              <span class="ratio-stat">總消費佔比：<span style="font-weight:600;color:var(--text)">{{ fi.ratioOfGrand }}%</span></span>
+              <span v-if="fi.keywordCategory && fi.keywordCategory !== fi.keyword" class="ratio-stat">{{ fi.keywordCategory }}佔比：<span style="font-weight:600;color:var(--text)">{{ fi.ratioOfCategory }}%</span></span>
             </div>
           </div>
           <div v-else class="ratio-no-data">{{ fi.keyword }}：本期無此消費</div>
@@ -1102,7 +1102,7 @@ const monthlyBars = computed(() => {
   font-family: 'Chivo Mono', monospace;
   font-size: 40px;
   font-weight: 700;
-  color: #8B5E3C;
+  color: var(--text);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
@@ -1116,9 +1116,9 @@ const monthlyBars = computed(() => {
 
 /* Card */
 .item-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
   padding: 4px 0;
 }
@@ -1213,14 +1213,14 @@ const monthlyBars = computed(() => {
 }
 
 .topn-section-label {
-  font-size: 13px;
-  color: #B18272;
+  font-size: 12px;
+  color: var(--text-soft);
 }
 
 .topn-section-total {
   font-size: 22px;
   font-weight: 700;
-  color: #8B5E3C;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
@@ -1268,7 +1268,7 @@ const monthlyBars = computed(() => {
 
 .topn-cat-amount {
   margin-left: auto;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -1289,7 +1289,7 @@ const monthlyBars = computed(() => {
 }
 
 .rank-name {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -1305,7 +1305,7 @@ const monthlyBars = computed(() => {
 }
 
 .rank-amount {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -1326,14 +1326,14 @@ const monthlyBars = computed(() => {
 }
 
 .group-label {
-  font-size: 13px;
-  color: #B18272;
+  font-size: 12px;
+  color: var(--text-soft);
 }
 
 .group-total {
   font-size: 22px;
   font-weight: 700;
-  color: #8B5E3C;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
@@ -1364,7 +1364,7 @@ const monthlyBars = computed(() => {
 }
 
 .ratio-no-data {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
   padding: 4px 0;
 }
@@ -1488,7 +1488,7 @@ const monthlyBars = computed(() => {
   font-family: 'Chivo Mono', monospace;
   font-size: 26px;
   font-weight: 700;
-  color: #8B5E3C;
+  color: var(--text);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
@@ -1535,7 +1535,7 @@ const monthlyBars = computed(() => {
 }
 
 .analysis-week-label {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
 }
 
@@ -1570,7 +1570,7 @@ const monthlyBars = computed(() => {
 }
 
 .cat-change-name {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -1586,14 +1586,14 @@ const monthlyBars = computed(() => {
 }
 
 .cat-change-indicator {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   text-align: center;
   flex-shrink: 0;
 }
 
 .cat-change-curr {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -1613,13 +1613,13 @@ const monthlyBars = computed(() => {
   font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   flex-shrink: 0;
 }
 
 .peak-badge-high {
   background: rgba(224, 122, 79, 0.15);
-  color: #E07A4F;
+  color: var(--accent);
 }
 
 .peak-badge-low {
@@ -1629,7 +1629,7 @@ const monthlyBars = computed(() => {
 
 .peak-date {
   flex: 1;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
 }
 
@@ -1667,7 +1667,7 @@ const monthlyBars = computed(() => {
 }
 
 .peak-sum-label {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
   flex-shrink: 0;
 }
@@ -1675,7 +1675,7 @@ const monthlyBars = computed(() => {
 .peak-sum-value {
   font-size: 14px;
   font-weight: 600;
-  color: #8B5E3C;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -1804,7 +1804,7 @@ const monthlyBars = computed(() => {
   height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(224, 122, 79, 0.4);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -1825,10 +1825,10 @@ const monthlyBars = computed(() => {
   flex: 1;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   border-radius: var(--radius-pill);
   padding: 4px 4px 4px 20px;
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .qr-input {
@@ -1857,7 +1857,7 @@ const monthlyBars = computed(() => {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1882,7 +1882,7 @@ const monthlyBars = computed(() => {
   display: flex;
   align-items: center;
   border: 1px solid rgba(224, 122, 79, 0.4);
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   padding: 2px;
   flex-shrink: 0;
 }
@@ -1893,7 +1893,7 @@ const monthlyBars = computed(() => {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1922,7 +1922,7 @@ const monthlyBars = computed(() => {
 .qr-error {
   margin-top: 8px;
   text-align: center;
-  font-size: 13px;
-  color: rgba(200, 60, 60, 0.9);
+  font-size: 12px;
+  color: var(--text-error);
 }
 </style>

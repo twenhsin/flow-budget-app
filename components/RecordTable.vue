@@ -47,7 +47,7 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
   background: var(--surface);
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .table-info {
@@ -55,7 +55,7 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
   border-bottom: 1px solid var(--border);
 }
@@ -110,7 +110,7 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 }
 
 .row-cat {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
 }
 
@@ -126,7 +126,7 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 .row-edit-btn {
   background: none;
   border: none;
-  color: #EC844C;
+  color: var(--accent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -148,7 +148,7 @@ const totalAmount = computed(() => props.records.reduce((s, r) => s + r.amount, 
 .table-empty {
   padding: 28px 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
 }
 </style>

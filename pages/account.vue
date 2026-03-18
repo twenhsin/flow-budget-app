@@ -152,10 +152,10 @@ const goSignup = () => navigateTo('/auth?tab=signup')
   display: flex;
   align-items: center;
   gap: 16px;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .user-avatar {
@@ -164,14 +164,14 @@ const goSignup = () => navigateTo('/auth?tab=signup')
   background: rgba(224, 122, 79, 0.12);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  color: #E07A4F;
+  color: var(--accent);
 }
 
 .user-avatar svg { width: 28px; height: 28px; }
 
 .user-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.user-email { font-size: 15px; font-weight: 500; color: #3D2314; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.user-since { font-size: 12px; color: #B18272; }
+.user-email { font-size: 14px; font-weight: 500; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-since { font-size: 12px; color: var(--text-soft); }
 
 /* 訪客 */
 .guest-card {
@@ -179,10 +179,10 @@ const goSignup = () => navigateTo('/auth?tab=signup')
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
   padding: 28px 20px;
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  box-shadow: var(--shadow-card);
   text-align: center;
 }
 
@@ -191,14 +191,14 @@ const goSignup = () => navigateTo('/auth?tab=signup')
   border-radius: 50%;
   background: rgba(224, 122, 79, 0.1);
   display: flex; align-items: center; justify-content: center;
-  color: #C4A090;
+  color: var(--text-soft);
   margin-bottom: 4px;
 }
 
 .guest-icon svg { width: 28px; height: 28px; }
 
-.guest-title { font-size: 16px; font-weight: 500; color: #5C3D2E; }
-.guest-desc { font-size: 13px; color: #B18272; line-height: 1.6; }
+.guest-title { font-size: 16px; font-weight: 500; color: var(--text-strong); }
+.guest-desc { font-size: 12px; color: var(--text-soft); line-height: 1.6; }
 
 /* 通用 action */
 .action-list { display: flex; flex-direction: column; gap: 8px; }
@@ -208,23 +208,23 @@ const goSignup = () => navigateTo('/auth?tab=signup')
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 16px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(196, 98, 45, 0.06);
+  box-shadow: var(--shadow-sm);
   transition: all 0.18s;
   width: 100%;
 }
 
 .action-row:active { transform: scale(0.98); }
 
-.action-label { font-family: 'Noto Sans TC', sans-serif; font-size: 15px; color: #3D2314; }
+.action-label { font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--text-strong); }
 
-.action-row svg { width: 20px; height: 20px; color: #C4A090; }
+.action-row svg { width: 20px; height: 20px; color: var(--text-soft); }
 
-.logout-row .action-label { color: #D04A20; }
-.logout-row svg { color: #D04A20; }
+.logout-row .action-label { color: var(--destructive); }
+.logout-row svg { color: var(--destructive); }
 .logout-row:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .nav-spacer { flex-shrink: 0; height: calc(72px + env(safe-area-inset-bottom)); }

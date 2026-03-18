@@ -70,7 +70,7 @@
                   :y="g.chartY + 3"
                   text-anchor="start"
                   font-size="8"
-                  fill="#B0A090"
+                  fill="#B18272"
                 >{{ g.label }}</text>
                 <!-- Area fill under line -->
                 <polygon
@@ -105,7 +105,7 @@
                   :y="SVG_H - 3"
                   text-anchor="middle"
                   font-size="8"
-                  fill="#B0A090"
+                  fill="#B18272"
                 >{{ xLabels[i] }}</text>
               </svg>
             </div>
@@ -528,7 +528,7 @@ onMounted(async () => {
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--surface);
   color: var(--text);
   font-family: 'Noto Sans TC', sans-serif;
   font-weight: 300;
@@ -571,7 +571,7 @@ onMounted(async () => {
 }
 
 .period-label {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
   letter-spacing: 0.04em;
@@ -597,9 +597,9 @@ onMounted(async () => {
 
 /* ── Card ── */
 .stat-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -628,21 +628,21 @@ onMounted(async () => {
 }
 
 .total-label {
-  font-size: 13px;
-  color: #B18272;
+  font-size: 12px;
+  color: var(--text-soft);
 }
 
 .total-amount {
   font-size: 28px;
   font-weight: 700;
-  color: #8B5E3C;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 
 /* Section title */
 .section-title {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
   margin-bottom: 12px;
 }
@@ -673,14 +673,14 @@ onMounted(async () => {
 }
 
 .cat-pct {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .cat-amount {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;

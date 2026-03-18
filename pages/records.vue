@@ -509,14 +509,14 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 }
 
 .summary-label {
-  font-size: 13px;
-  color: #B18272;
+  font-size: 12px;
+  color: var(--text-soft);
 }
 
 .summary-total {
   font-size: 28px;
   font-weight: 700;
-  color: #8B5E3C;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
@@ -545,7 +545,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 12px;
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.08);
+  box-shadow: var(--shadow-card);
   animation: rowIn 0.25s ease both;
 }
 
@@ -558,12 +558,12 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 }
 
 .group-date {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
 }
 
 .group-subtotal {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
 }
@@ -608,7 +608,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 }
 
 .row-cat {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
 }
 
@@ -624,7 +624,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 .row-edit-btn {
   background: none;
   border: none;
-  color: #EC844C;
+  color: var(--accent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -654,10 +654,10 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 .input-bar {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   border-radius: var(--radius-pill);
   padding: 4px 4px 4px 20px;
-  box-shadow: 0 2px 12px rgba(196, 98, 45, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .bar-input {
@@ -682,7 +682,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -704,7 +704,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   display: flex;
   align-items: center;
   border: 1px solid rgba(224, 122, 79, 0.4);
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   padding: 2px;
   flex-shrink: 0;
 }
@@ -715,7 +715,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -758,7 +758,7 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 .saving-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid rgba(224, 122, 79, 0.25);
+  border: 3px solid var(--border-accent);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -773,11 +773,11 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   bottom: calc(88px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(200, 60, 60, 0.9);
+  background: var(--error-bg);
   color: white;
-  font-size: 13px;
+  font-size: 12px;
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   white-space: nowrap;
   z-index: 100;
   pointer-events: none;

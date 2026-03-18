@@ -1,0 +1,240 @@
+{
+  "primitive": {
+    "color": {
+      "orange": {
+        "400": { "$value": "#EC844C", "$type": "color", "$description": "Lighter orange — appears in add-btn, icon-btn, nav active, edit-btn. Should consolidate with orange-500." },
+        "500": { "$value": "#E07A4F", "$type": "color", "$description": "Official accent — var(--accent)" },
+        "600": { "$value": "#C4622D", "$type": "color", "$description": "Accent dark — var(--accent-dark), used in trend chart polyline/circles" },
+        "700": { "$value": "#D04A20", "$type": "color", "$description": "⚠️ INCONSISTENCY: auth error color + logout color. Similar to orange-600 but different." }
+      },
+      "brown": {
+        "900": { "$value": "#3D2314", "$type": "color", "$description": "Darkest text — auth input, user email, action label" },
+        "800": { "$value": "#5C3D2E", "$type": "color", "$description": "⚠️ INCONSISTENCY: auth title, guest title. Between brown-900 and brown-700." },
+        "700": { "$value": "#8B5E3C", "$type": "color", "$description": "Primary text — var(--text), summary amounts" },
+        "500": { "$value": "#B18272", "$type": "color", "$description": "Soft text — var(--text-soft)" },
+        "400": { "$value": "#B0A090", "$type": "color", "$description": "⚠️ INCONSISTENCY: SVG axis labels in analysis.vue. Very close to brown-500 (#B18272)." },
+        "300": { "$value": "#C4A090", "$type": "color", "$description": "Auth input placeholder" },
+        "200": { "$value": "#D4C4B4", "$type": "color", "$description": "Disabled — var(--disabled)" },
+        "100": { "$value": "#C4A880", "$type": "color", "$description": "Border base — rgba(196, 168, 130, 0.25) at full opacity" }
+      },
+      "warm-white": {
+        "100": { "$value": "#fffcf5", "$type": "color" },
+        "200": { "$value": "#fffaf0", "$type": "color", "$description": "Layout/body background" },
+        "300": { "$value": "#FFF8F2", "$type": "color", "$description": "Surface solid — var(--surface-solid)" },
+        "400": { "$value": "#FDF0E6", "$type": "color", "$description": "Gradient start — bg-top (tailwind config)" }
+      },
+      "warm-peach": {
+        "100": { "$value": "#ffe4cc", "$type": "color" },
+        "200": { "$value": "#ffd1b3", "$type": "color" },
+        "300": { "$value": "#FBDFC8", "$type": "color", "$description": "Gradient mid" },
+        "400": { "$value": "#ffc0a0", "$type": "color", "$description": "bg-bottom (tailwind config)" },
+        "500": { "$value": "#F5C8A8", "$type": "color", "$description": "Gradient end" }
+      },
+      "red": {
+        "500": { "$value": "rgba(200, 60, 60, 0.9)", "$type": "color", "$description": "Error toast background" },
+        "notification": { "$value": "#E05252", "$type": "color", "$description": "Bottom nav notification dot" }
+      },
+      "green": {
+        "600": { "$value": "#4A9060", "$type": "color", "$description": "Auth success message" }
+      },
+      "white": {
+        "alpha-72": { "$value": "rgba(255, 255, 255, 0.72)", "$type": "color", "$description": "⚠️ INCONSISTENCY: account cards, action pill" },
+        "alpha-75": { "$value": "rgba(255, 255, 255, 0.75)", "$type": "color", "$description": "⚠️ INCONSISTENCY: auth card" },
+        "alpha-80": { "$value": "rgba(255, 255, 255, 0.80)", "$type": "color", "$description": "⚠️ INCONSISTENCY: input bars, center action button" },
+        "alpha-85": { "$value": "rgba(255, 255, 255, 0.85)", "$type": "color", "$description": "var(--surface)" },
+        "pure": { "$value": "#ffffff", "$type": "color" }
+      },
+      "black": {
+        "alpha-06": { "$value": "rgba(0, 0, 0, 0.06)", "$type": "color" },
+        "alpha-07": { "$value": "rgba(0, 0, 0, 0.07)", "$type": "color", "$description": "SVG grid lines" }
+      }
+    },
+    "radius": {
+      "circle":  { "$value": "50%",   "$type": "dimension" },
+      "pill":    { "$value": "100px", "$type": "dimension", "$description": "var(--radius-pill)" },
+      "pill-sm": { "$value": "40px",  "$type": "dimension", "$description": "⚠️ INCONSISTENCY: used as pill on input-icons bar, action-pill — should consolidate with radius-pill" },
+      "xl":      { "$value": "24px",  "$type": "dimension", "$description": "Auth card" },
+      "lg":      { "$value": "22px",  "$type": "dimension", "$description": "var(--radius-lg), record action center button" },
+      "md":      { "$value": "20px",  "$type": "dimension", "$description": "⚠️ INCONSISTENCY: error toasts, guest card, user card — close to radius-lg (22px)" },
+      "base":    { "$value": "16px",  "$type": "dimension", "$description": "var(--radius-md)" },
+      "sm":      { "$value": "12px",  "$type": "dimension", "$description": "Auth/edit fields, category panel" },
+      "xs":      { "$value": "2px",   "$type": "dimension", "$description": "Timer bar" }
+    },
+    "spacing": {
+      "1":  { "$value": "4px",  "$type": "dimension" },
+      "2":  { "$value": "8px",  "$type": "dimension" },
+      "3":  { "$value": "12px", "$type": "dimension" },
+      "4":  { "$value": "16px", "$type": "dimension" },
+      "5":  { "$value": "20px", "$type": "dimension" },
+      "6":  { "$value": "24px", "$type": "dimension" },
+      "7":  { "$value": "28px", "$type": "dimension" },
+      "8":  { "$value": "32px", "$type": "dimension" },
+      "10": { "$value": "40px", "$type": "dimension" },
+      "11": { "$value": "44px", "$type": "dimension" },
+      "12": { "$value": "48px", "$type": "dimension" },
+      "13": { "$value": "52px", "$type": "dimension" },
+      "15": { "$value": "60px", "$type": "dimension" },
+      "18": { "$value": "72px", "$type": "dimension", "$description": "Bottom nav height" }
+    },
+    "font-family": {
+      "serif": { "$value": "'Noto Serif TC', serif",   "$type": "fontFamilies" },
+      "sans":  { "$value": "'Noto Sans TC', sans-serif", "$type": "fontFamilies" },
+      "mono":  { "$value": "'Chivo Mono', monospace",  "$type": "fontFamilies" }
+    },
+    "font-size": {
+      "xs":   { "$value": "8px",  "$type": "fontSizes", "$description": "SVG chart axis labels only" },
+      "sm":   { "$value": "11px", "$type": "fontSizes", "$description": "⚠️ records row-cat, cat-pct in analysis — consider unifying with 12px" },
+      "sm2":  { "$value": "12px", "$type": "fontSizes", "$description": "Field labels, user-since" },
+      "base": { "$value": "13px", "$type": "fontSizes", "$description": "Most secondary text: group-date, section titles, totals label, empty, error toast (records), sub-text" },
+      "md":   { "$value": "14px", "$type": "fontSizes", "$description": "Tabs (mode, dim, auth), nav label, row name, row amount, record error toast" },
+      "lg":   { "$value": "15px", "$type": "fontSizes", "$description": "Auth tab, field input, user email, action label, period label" },
+      "xl":   { "$value": "16px", "$type": "fontSizes", "$description": "Home header, input fields (iOS anti-zoom), month label, record title, guest title" },
+      "2xl":  { "$value": "18px", "$type": "fontSizes", "$description": "Complete page text" },
+      "3xl":  { "$value": "24px", "$type": "fontSizes", "$description": "Record page title" },
+      "4xl":  { "$value": "28px", "$type": "fontSizes", "$description": "Auth title, summary totals" },
+      "hero": { "$value": "42px", "$type": "fontSizes", "$description": "Home headline (Chivo Mono)" }
+    },
+    "font-weight": {
+      "light":   { "$value": "300", "$type": "fontWeights", "$description": "Base/default weight throughout app" },
+      "regular": { "$value": "400", "$type": "fontWeights" },
+      "medium":  { "$value": "500", "$type": "fontWeights", "$description": "Active tabs, month label, period label, nav active, auth button" },
+      "semibold": { "$value": "600", "$type": "fontWeights", "$description": "Row amounts, cat amounts" },
+      "bold":    { "$value": "700", "$type": "fontWeights", "$description": "Summary totals" }
+    },
+    "line-height": {
+      "tight":  { "$value": "1",   "$type": "lineHeights" },
+      "normal": { "$value": "1.6", "$type": "lineHeights", "$description": "Home headline, guest desc" }
+    },
+    "letter-spacing": {
+      "sm":   { "$value": "0.04em", "$type": "letterSpacing", "$description": "Month label, period label, auth field label, nav label" },
+      "base": { "$value": "0.05em", "$type": "letterSpacing", "$description": "Home header" }
+    },
+    "shadow": {
+      "xs":  { "$value": "0 1px 4px rgba(0, 0, 0, 0.06)",         "$type": "boxShadow", "$description": "Record action center button (uses black, not brand color)" },
+      "sm":  { "$value": "0 2px 12px rgba(196, 98, 45, 0.06)",     "$type": "boxShadow", "$description": "⚠️ Account action rows" },
+      "sm2": { "$value": "0 2px 12px rgba(196, 98, 45, 0.1)",      "$type": "boxShadow", "$description": "⚠️ INCONSISTENCY vs sm: same spread, different opacity. Input bar shadow." },
+      "md":  { "$value": "0 2px 16px rgba(196, 98, 45, 0.08)",     "$type": "boxShadow", "$description": "Cards: date groups, stat cards, user card, record-table, guest card" },
+      "md2": { "$value": "0 2px 16px rgba(196, 98, 45, 0.1)",      "$type": "boxShadow", "$description": "⚠️ INCONSISTENCY vs md: index input bar" },
+      "lg":  { "$value": "0 8px 40px rgba(196, 98, 45, 0.12)",     "$type": "boxShadow", "$description": "Auth card" },
+      "btn": { "$value": "0 4px 12px rgba(224, 122, 79, 0.35)",    "$type": "boxShadow", "$description": "Confirm button (uses accent color, not accent-dark)" }
+    },
+    "duration": {
+      "instant":  { "$value": "0.18s", "$type": "duration" },
+      "fast":     { "$value": "0.2s",  "$type": "duration" },
+      "normal":   { "$value": "0.25s", "$type": "duration" },
+      "page":     { "$value": "0.28s", "$type": "duration" },
+      "slow":     { "$value": "0.5s",  "$type": "duration" },
+      "pulse":    { "$value": "1.2s",  "$type": "duration" },
+      "mic":      { "$value": "1.5s",  "$type": "duration" }
+    }
+  },
+
+  "semantic": {
+    "color": {
+      "accent":         { "$value": "{primitive.color.orange.500}",        "$type": "color", "$description": "Primary brand color — buttons, active states, interactive elements" },
+      "accent-dark":    { "$value": "{primitive.color.orange.600}",        "$type": "color", "$description": "Darker accent — charts, trend lines" },
+      "accent-light":   { "$value": "{primitive.color.orange.400}",        "$type": "color", "$description": "⚠️ Should consolidate with accent. Currently used in icon-btn, add-btn, nav active." },
+      "destructive":    { "$value": "{primitive.color.orange.700}",        "$type": "color", "$description": "Logout, auth errors. ⚠️ Distinct from accent-dark despite similar hue." },
+      "text-primary":   { "$value": "{primitive.color.brown.700}",         "$type": "color", "$description": "Main body text — var(--text)" },
+      "text-secondary": { "$value": "{primitive.color.brown.500}",         "$type": "color", "$description": "Muted/label text — var(--text-soft)" },
+      "text-strong":    { "$value": "{primitive.color.brown.900}",         "$type": "color", "$description": "High-contrast text — auth inputs, account page labels" },
+      "text-heading":   { "$value": "{primitive.color.brown.800}",         "$type": "color", "$description": "⚠️ Auth/card headings — should align with text-primary or text-strong" },
+      "text-on-accent": { "$value": "{primitive.color.white.pure}",        "$type": "color" },
+      "text-error":     { "$value": "{primitive.color.red.notification}",  "$type": "color" },
+      "text-success":   { "$value": "{primitive.color.green.600}",         "$type": "color" },
+      "bg-base":        { "$value": "{primitive.color.warm-white.200}",    "$type": "color", "$description": "App body background" },
+      "bg-gradient-from": { "$value": "{primitive.color.warm-white.400}", "$type": "color" },
+      "bg-gradient-to":   { "$value": "{primitive.color.warm-peach.500}", "$type": "color" },
+      "surface":        { "$value": "{primitive.color.white.alpha-85}",    "$type": "color", "$description": "var(--surface) — card/panel default" },
+      "surface-solid":  { "$value": "{primitive.color.warm-white.300}",    "$type": "color", "$description": "var(--surface-solid) — opaque surface" },
+      "surface-glass":  { "$value": "{primitive.color.white.alpha-80}",    "$type": "color", "$description": "Input bars, lighter overlays. ⚠️ Also appears as 0.72/0.75." },
+      "border":         { "$value": "rgba(196, 168, 130, 0.25)",           "$type": "color", "$description": "var(--border)" },
+      "border-accent":  { "$value": "rgba(224, 122, 79, 0.25)",            "$type": "color", "$description": "Form field borders, input-icons ring" },
+      "disabled":       { "$value": "{primitive.color.brown.200}",         "$type": "color", "$description": "var(--disabled)" },
+      "error-bg":       { "$value": "{primitive.color.red.500}",           "$type": "color", "$description": "Error toast background" },
+      "notification":   { "$value": "{primitive.color.red.notification}",  "$type": "color" }
+    },
+    "radius": {
+      "interactive": { "$value": "{primitive.radius.pill}",   "$type": "dimension", "$description": "All pill-shaped buttons and inputs" },
+      "card":        { "$value": "{primitive.radius.base}",   "$type": "dimension", "$description": "Standard cards — var(--radius-md)" },
+      "card-lg":     { "$value": "{primitive.radius.lg}",     "$type": "dimension", "$description": "Larger surface radius — var(--radius-lg)" },
+      "modal":       { "$value": "{primitive.radius.xl}",     "$type": "dimension", "$description": "Auth card, modals" },
+      "field":       { "$value": "{primitive.radius.sm}",     "$type": "dimension", "$description": "Form inputs, category selectors" },
+      "avatar":      { "$value": "{primitive.radius.circle}", "$type": "dimension" }
+    },
+    "shadow": {
+      "card":    { "$value": "{primitive.shadow.md}",  "$type": "boxShadow", "$description": "Standard card elevation" },
+      "input":   { "$value": "{primitive.shadow.sm2}", "$type": "boxShadow", "$description": "Input bar shadow" },
+      "modal":   { "$value": "{primitive.shadow.lg}",  "$type": "boxShadow", "$description": "Auth card, high elevation" },
+      "button":  { "$value": "{primitive.shadow.btn}", "$type": "boxShadow", "$description": "Primary action button" }
+    },
+    "typography": {
+      "font-ui":      { "$value": "{primitive.font-family.sans}",  "$type": "fontFamilies" },
+      "font-display": { "$value": "{primitive.font-family.serif}", "$type": "fontFamilies" },
+      "font-mono":    { "$value": "{primitive.font-family.mono}",  "$type": "fontFamilies" },
+      "size-label":   { "$value": "{primitive.font-size.base}",    "$type": "fontSizes",   "$description": "13px — most common secondary text size" },
+      "size-body":    { "$value": "{primitive.font-size.md}",      "$type": "fontSizes",   "$description": "14px — tabs, item names, amounts" },
+      "size-input":   { "$value": "{primitive.font-size.xl}",      "$type": "fontSizes",   "$description": "16px — all inputs (iOS anti-zoom requirement)" },
+      "weight-default": { "$value": "{primitive.font-weight.light}",  "$type": "fontWeights" },
+      "weight-active":  { "$value": "{primitive.font-weight.medium}", "$type": "fontWeights" },
+      "weight-amount":  { "$value": "{primitive.font-weight.bold}",   "$type": "fontWeights" }
+    }
+  },
+
+  "component": {
+    "card": {
+      "bg":            { "$value": "{semantic.color.surface}",    "$type": "color" },
+      "border-radius": { "$value": "{semantic.radius.card}",      "$type": "dimension" },
+      "shadow":        { "$value": "{semantic.shadow.card}",      "$type": "boxShadow" },
+      "padding-y":     { "$value": "{primitive.spacing.4}",       "$type": "dimension" },
+      "padding-x":     { "$value": "{primitive.spacing.4}",       "$type": "dimension" }
+    },
+    "button-primary": {
+      "bg":            { "$value": "{semantic.color.accent}",      "$type": "color" },
+      "color":         { "$value": "{semantic.color.text-on-accent}", "$type": "color" },
+      "border-radius": { "$value": "{semantic.radius.interactive}", "$type": "dimension" },
+      "shadow":        { "$value": "{semantic.shadow.button}",     "$type": "boxShadow" },
+      "font-weight":   { "$value": "{semantic.typography.weight-active}", "$type": "fontWeights" }
+    },
+    "button-icon": {
+      "color":         { "$value": "{semantic.color.accent-light}", "$type": "color", "$description": "⚠️ Uses #EC844C, not --accent. Consider aligning." },
+      "size":          { "$value": "36px",  "$type": "dimension" },
+      "border-radius": { "$value": "{primitive.radius.circle}", "$type": "dimension" }
+    },
+    "input-bar": {
+      "bg":            { "$value": "{semantic.color.surface-glass}", "$type": "color" },
+      "border-radius": { "$value": "{semantic.radius.interactive}",  "$type": "dimension" },
+      "shadow":        { "$value": "{semantic.shadow.input}",         "$type": "boxShadow" },
+      "font-size":     { "$value": "{semantic.typography.size-input}", "$type": "fontSizes" },
+      "font-weight":   { "$value": "{semantic.typography.weight-default}", "$type": "fontWeights" }
+    },
+    "mode-tab": {
+      "bg":            { "$value": "rgba(255, 255, 255, 0.7)", "$type": "color" },
+      "bg-active":     { "$value": "{semantic.color.accent}", "$type": "color" },
+      "color":         { "$value": "{semantic.color.text-primary}", "$type": "color" },
+      "color-active":  { "$value": "{semantic.color.text-on-accent}", "$type": "color" },
+      "border-radius": { "$value": "{semantic.radius.interactive}", "$type": "dimension" },
+      "padding":       { "$value": "9px 20px", "$type": "dimension" },
+      "font-size":     { "$value": "{primitive.font-size.md}", "$type": "fontSizes" }
+    },
+    "bottom-nav": {
+      "bg":            { "$value": "rgba(253, 240, 230, 0.92)", "$type": "color" },
+      "border-top":    { "$value": "{semantic.color.border}",   "$type": "color" },
+      "color":         { "$value": "{semantic.color.text-secondary}", "$type": "color" },
+      "color-active":  { "$value": "{semantic.color.accent-light}", "$type": "color", "$description": "⚠️ Uses #EC844C, not --accent" },
+      "height":        { "$value": "{primitive.spacing.18}", "$type": "dimension" }
+    },
+    "error-toast": {
+      "bg":            { "$value": "{semantic.color.error-bg}",   "$type": "color" },
+      "color":         { "$value": "{semantic.color.text-on-accent}", "$type": "color" },
+      "border-radius": { "$value": "{primitive.radius.md}",       "$type": "dimension", "$description": "⚠️ 20px — inconsistent, see radius tokens" },
+      "font-size":     { "$value": "{semantic.typography.size-label}", "$type": "fontSizes", "$description": "⚠️ 13px in records, 14px in index/record pages" }
+    },
+    "record-row": {
+      "cat-icon-size":  { "$value": "30px", "$type": "dimension" },
+      "name-font-size": { "$value": "{primitive.font-size.md}",   "$type": "fontSizes" },
+      "cat-font-size":  { "$value": "{primitive.font-size.sm}",   "$type": "fontSizes", "$description": "⚠️ 11px — consider bumping to 12px" },
+      "amount-weight":  { "$value": "{primitive.font-weight.semibold}", "$type": "fontWeights" }
+    }
+  }
+}

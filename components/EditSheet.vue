@@ -578,7 +578,7 @@ h3 {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -587,7 +587,7 @@ h3 {
 }
 
 .delete-btn:active {
-  color: #E05252;
+  color: var(--text-error);
 }
 
 .delete-btn svg {
@@ -601,7 +601,7 @@ h3 {
 
 .edit-field label {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-soft);
   margin-bottom: 6px;
   letter-spacing: 0.05em;
@@ -670,7 +670,7 @@ h3 {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   z-index: 200;
-  box-shadow: 0 8px 24px rgba(196, 98, 45, 0.12);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
 }
 
@@ -745,7 +745,7 @@ h3 {
 .cat-add-item {
   color: var(--accent) !important;
   border-bottom: 1px solid var(--border);
-  font-size: 13px !important;
+  font-size: 12px !important;
 }
 
 .cat-add-item svg {
@@ -785,7 +785,7 @@ h3 {
 }
 
 .add-modal-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
   margin-bottom: 16px;
@@ -812,7 +812,7 @@ h3 {
 
 .add-cat-error {
   font-size: 12px;
-  color: rgba(200, 60, 60, 0.9);
+  color: var(--text-error);
   text-align: center;
   margin-bottom: 10px;
 }
@@ -892,7 +892,7 @@ h3 {
   border: 1.5px solid rgba(224, 122, 79, 0.35);
   background: transparent;
   font-family: 'Noto Sans TC', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--accent);
   cursor: pointer;
   transition: background 0.15s;
@@ -917,7 +917,7 @@ h3 {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #E05252;
+  color: var(--text-error);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -927,7 +927,7 @@ h3 {
 }
 
 .edit-cat-delete-btn:active {
-  color: #C03030;
+  color: var(--destructive);
 }
 
 .edit-cat-preview-row {
@@ -1034,7 +1034,7 @@ h3 {
 .edit-save-btn {
   background: var(--accent);
   color: white;
-  box-shadow: 0 4px 12px rgba(224, 122, 79, 0.3);
+  box-shadow: var(--shadow-btn);
 }
 
 .edit-save-btn:active {

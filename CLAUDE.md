@@ -13,11 +13,51 @@
 
 ## 設計語言
 - 背景：暖橙漸層，三個動態色球（黃暖光、橘光、桃光）
-- Accent color：`#E07A4F`（--accent）、Accent dark：`#C4622D`（--accent-dark）
-- 字型：Noto Serif TC（標題）、Noto Sans TC（內文）
 - 風格：圓角 pill、輕陰影、半透明 surface
 - 類別 icon：Lucide Vue Next（165 個 icon，15 個語意群組）
 - 類別顏色：莫蘭迪色票（66 個中淺色，L 45–88%）
+
+## Design Token 系統
+專案使用三層 token 架構（primitive → semantic → component），定義於 `tokens.json`。
+
+### 核心顏色
+- Accent：`--accent` = `#E07A4F`（`semantic.color.accent`）
+- Accent dark：`--accent-dark` = `#C4622D`（`semantic.color.accent-dark`）
+- Destructive：`#D04A20`（`semantic.color.destructive`）— 登出、錯誤提示
+- Primary text：`--text` = `#8B5E3C`（`semantic.color.text-primary`）
+- Soft text：`--text-soft` = `#B18272`（`semantic.color.text-secondary`）
+- Strong text：`#3D2314`（`semantic.color.text-strong`）
+- Surface：`rgba(255,255,255,0.80)`（`semantic.color.surface`）
+- Surface solid：`#FFF8F2`（`semantic.color.surface-solid`）
+- Border：`rgba(196,168,130,0.25)`（`semantic.color.border`）
+
+### 字型
+- UI 字型：`'Noto Sans TC', sans-serif`（`primitive.font-family.sans`）
+- Mono 字型：`'Chivo Mono', monospace`（`primitive.font-family.mono`）
+
+### 字級（semantic）
+| Token | 大小 | 用途 |
+|-------|------|------|
+| `size-display` | 42px | 首頁大標題、分析結果頁 |
+| `size-amount-hero` | 28px | 重要顯目金額 |
+| `size-title` | 16px | 首頁說明文、登入頁標題、日期 |
+| `size-input` | 16px | input 欄位（iOS anti-zoom） |
+| `size-body` | 14px | 按鈕文字、分類標題、消費項目、消費金額 |
+| `size-label` | 12px | nav label、登入說明、輔助說明、類別、數據說明 |
+| `size-chart-label` | 10px | 圖表軸線文字 |
+
+### 圓角
+- `interactive`：16px（按鈕、互動元素）
+- `card`：24px（卡片、modal）
+- `pill`：100px（pill 形按鈕、input bar）
+- `avatar`：50%（圓形）
+
+### 刻意保留的 hardcoded 值（不屬於 token 管轄）
+- Animation orb keyframes 的 rgba 顏色（動畫系統專用）
+- `rgba(224, 122, 79, 0.08/0.1/0.15)` hover/背景 tint
+- SVG fill 顏色（`#E07A4F`、`#90C8A0`）— CSS vars 無法用於 SVG style 屬性
+- `#e0ccba` 數據條底色（per DECISIONS.md spec）
+- `#E8E0D8` ratio bar 背景
 
 ## 頁面結構
 - **首頁**：兩個 tab（紀錄／查詢）+ 輸入列（文字、語音、相機）
@@ -29,6 +69,7 @@
 - **Nav**：首頁、紀錄、分析、帳號
 
 ## 重要檔案路徑
+- `tokens.json` — Design token 單一來源（primitive / semantic / component 三層）
 - `pages/index.vue` — 首頁
 - `pages/records.vue` — 紀錄頁
 - `pages/query-result.vue` — 查詢結果頁
@@ -93,43 +134,19 @@ RLS 已啟用，兩張表都限制 `auth.uid() = user_id`。
 - [x] 類別遷移到 Supabase categories 表（跨瀏覽器同步）
 - [x] 訪客模式資料合併（登入時 merge localStorage → Supabase）
 - [x] AI 安全防護（off-topic 拒絕、prompt injection 防護、輸入長度限制）
+- [x] 查詢結果頁 analysis_full（模糊分析意圖：總計、佔比數據條、與上月比較、消費明細、趨勢圖）
+- [x] 查詢結果頁 analysis_compare（上週 vs 上上週，週一到週日，server 端直接計算日期不依賴 GPT 解析；單一週期問句不觸發比較模式）
+- [x] 查詢結果頁 analysis_peak（高低峰日卡片 + BarChart，總結區三維度：最高消費項目／類別／日）
+- [x] 動態背景移至 layouts/default.vue（全頁共用，各頁面背景保持透明）
+- [x] Design token 系統建立（tokens.json，三層架構，已套用至全專案）
 
 ## 注意事項
 - 所有頁面最大寬度 430px，margin auto 置中
-- 手機文字輸入字級統一 16px 防止 iOS 縮放（待優化）
+- 手機文字輸入字級統一 16px 防止 iOS 縮放（`semantic.typography.size-input`）
 - 語音辨識語言設定為 zh-TW
 - .env 不上傳 GitHub，Vercel 環境變數需手動設定
 - SSR 環境下不可直接讀取 localStorage，需在 onMounted 或 process.client 判斷後執行
-
-## 🔒 樣式保護規則（禁止修改）
-
-以下樣式已定案，**任何任務都絕對不得修改**，即使任務描述沒有明確禁止：
-
-### 全域背景
-- 所有頁面背景為暖橙漸層動畫（三個動態色球），定義於全域 layout
-- **禁止**在任何頁面或元件加上額外的背景色、背景層、或覆蓋漸層的色塊
-
-### 頁面各區域背景規則
-- **Header 區**（標題、日期、月份切換器等）：透明背景，直接顯示漸層，禁止加背景色
-- **總結區**（query-result 的總計、佔比數據條等）：透明背景，禁止加卡片背景或白色底層
-- **清單區**（消費明細卡片）：維持現有半透明白色卡片樣式，禁止更改
-- **Nav**：維持現有樣式，禁止更改
-
-### 禁止修改的 CSS 項目
-- 全域字型設定（Noto Serif TC / Noto Sans TC）
-- Accent 色碼（`#E07A4F`、`#C4622D`）
-- 頁面最大寬度（430px）
-- Nav 高度與樣式
-- 任何已存在的全域 CSS class 或 CSS 變數
-
-### 執行前自我檢查（每次任務開始前必做）
-1. 本次修改是否只影響指定的 HTML 結構和新增的 CSS class？
-2. 是否有新增任何背景色、卡片底色到原本透明的區域？
-3. 是否修改了任何現有的 CSS class？
-
-如果第 2 或第 3 項答案為「是」，請停止並重新評估修改範圍，不得繼續執行。
-
----
+- 「上週」日期計算在 server 端直接用 JS 計算（以本週週一往回推），不信任 GPT 解析的日期輸出
 
 ## 開發規範
 在進行任何新增或修改前，請遵守以下規則：
@@ -137,6 +154,17 @@ RLS 已啟用，兩張表都限制 `auth.uid() = user_id`。
 2. **樣式不外溢**：新增的樣式只作用於新元件或新頁面，不修改任何現有的 Tailwind class、CSS 變數、或全域樣式檔案。
 3. **共用元件不改動**：如果任務需要使用現有元件，只引用，不修改原始元件檔案。
 4. **路由不異動**：不新增、不刪除、不修改現有頁面的路由設定，除非任務明確要求。
-5. **最小範圍修改**：只新增必要的 HTML 結構和對應的新 CSS class，不重構現有程式碼。
-6. **完成後列出變更清單**：任務完成後，列出所有新增與修改的檔案路徑及修改的行數範圍，方便 review。
-7. **樣式保護優先**：遇到任何樣式相關的修改，先對照上方「🔒 樣式保護規則」確認不違反禁止項目，再動手。
+5. **Token 優先**：新增樣式時，優先使用 `tokens.json` 裡定義的 semantic token 值，不新增 hardcoded 顏色或字級。
+6. **完成後列出變更清單**：任務完成後，列出所有新增與修改的檔案路徑，方便 review。
+
+## 樣式保護規則（查詢結果頁）
+以下樣式已定案，任何任務都不得更動：
+- **背景**：所有區塊背景永遠透明，漸層動畫來自 `layouts/default.vue`，禁止在任何元件加背景色
+- **Header 區 / 總結區**：透明背景，禁止加 `background`、`bg-*`、`backdrop-*`
+- **Accent**：`var(--accent)`（`#E07A4F`），數字色：`var(--text)`（`#8B5E3C`），輔助文字：`var(--text-soft)`（`#B18272`）
+- **數據條**：底色 `#e0ccba`，三層疊層結構（灰底 → 類別色 → 橘色），不可改變層數或顏色
+- **分隔線**：`rgba(196,168,130,0.25)`，不可加深或改色
+- **間距**：所有區塊 padding `24px`，區塊間距 `24px`，不可縮減
+- **字級**：全頁統一 `12px`，明細日期 `12px`（M/D 格式），不可改回 11px
+- **趨勢圖軸標籤**：`var(--text-soft)` 即 `#B18272`
+- **趨勢圖線條顏色**：使用 `catColor(類別名稱)` 取得對應類別色，不可使用固定色

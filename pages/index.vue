@@ -228,7 +228,7 @@ const goCamera = () => {
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--surface);
   color: var(--text);
   font-family: 'Noto Sans TC', sans-serif;
   font-weight: 300;
@@ -243,10 +243,10 @@ const goCamera = () => {
 .input-bar {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   border-radius: var(--radius-pill);
   padding: 4px 4px 4px 20px;
-  box-shadow: 0 2px 16px rgba(196, 98, 45, 0.1);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -273,7 +273,7 @@ const goCamera = () => {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,7 +302,7 @@ const goCamera = () => {
   gap: 0;
   flex-shrink: 0;
   border: 1px solid rgba(224, 122, 79, 0.4);
-  border-radius: 40px;
+  border-radius: var(--radius-pill);
   padding: 2px;
 }
 
@@ -316,7 +316,7 @@ const goCamera = () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #EC844C;
+  color: var(--accent);
   transition: all 0.18s;
   flex-shrink: 0;
 }
@@ -358,11 +358,11 @@ const goCamera = () => {
   bottom: calc(100px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(200, 60, 60, 0.9);
+  background: var(--error-bg);
   color: white;
   font-size: 14px;
   padding: 10px 20px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   white-space: nowrap;
   z-index: 20;
 }

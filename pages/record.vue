@@ -257,11 +257,11 @@ const confirmRecord = async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 40px;
+  background: var(--surface);
+  border-radius: var(--radius-pill);
   padding: 8px;
   backdrop-filter: blur(12px);
-  box-shadow: 0 2px 20px rgba(196, 98, 45, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .action-side-btn {
@@ -291,10 +291,10 @@ const confirmRecord = async () => {
 .action-center-btn {
   width: 60px;
   height: 44px;
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   border: none;
-  background: rgba(255, 255, 255, 0.8);
-  color: #EC844C;
+  background: var(--surface);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -324,8 +324,8 @@ const confirmRecord = async () => {
   flex: 1;
   min-width: 0;
   height: 44px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   display: flex;
   align-items: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
@@ -353,7 +353,7 @@ const confirmRecord = async () => {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #EC844C;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,7 +379,7 @@ const confirmRecord = async () => {
 .action-confirm {
   background: var(--accent);
   color: white;
-  box-shadow: 0 4px 12px rgba(224, 122, 79, 0.35);
+  box-shadow: var(--shadow-btn);
 }
 
 .action-confirm:active {
@@ -414,7 +414,7 @@ const confirmRecord = async () => {
 .saving-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid rgba(224, 122, 79, 0.25);
+  border: 3px solid var(--border-accent);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -429,11 +429,11 @@ const confirmRecord = async () => {
   bottom: calc(120px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(200, 60, 60, 0.9);
+  background: var(--error-bg);
   color: white;
   font-size: 14px;
   padding: 10px 20px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   white-space: nowrap;
   z-index: 20;
 }

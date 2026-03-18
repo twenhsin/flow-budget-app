@@ -43,7 +43,7 @@ defineProps<{ visible: boolean; transcript?: string }>()
 .listen-dot:nth-child(3) { animation-delay: 0.4s; }
 
 .listen-text {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   font-weight: 300;
 }

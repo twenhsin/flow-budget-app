@@ -317,7 +317,7 @@ onUnmounted(() => stopCamera())
 
 .analyzing-text {
   color: white;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 300;
   letter-spacing: 0.06em;
 }
@@ -327,11 +327,11 @@ onUnmounted(() => stopCamera())
   bottom: calc(140px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(200, 60, 60, 0.9);
+  background: var(--error-bg);
   color: white;
   font-size: 14px;
   padding: 10px 20px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   white-space: nowrap;
   z-index: 10;
 }

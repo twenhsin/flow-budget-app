@@ -1,17 +1,44 @@
 :root {
-  --bg-top: #fffaf0;
-  --bg-bottom: #ffc0a0;
+  /* Background */
+  --bg-top: #FDF0E6;
+  --bg-bottom: #F5C8A8;
+
+  /* Brand */
   --accent: #E07A4F;
   --accent-dark: #C4622D;
+  --destructive: #D04A20;
+
+  /* Text */
   --text: #8B5E3C;
   --text-soft: #B18272;
-  --surface: rgba(255, 255, 255, 0.85);
+  --text-strong: #3D2314;
+  --text-success: #4A9060;
+  --text-error: #E05252;
+
+  /* Surface */
+  --surface: rgba(255, 255, 255, 0.80);
   --surface-solid: #FFF8F2;
+
+  /* Border */
   --border: rgba(196, 168, 130, 0.25);
+  --border-accent: rgba(224, 122, 79, 0.25);
+
+  /* Misc */
   --disabled: #D4C4B4;
-  --radius-lg: 22px;
+  --error-bg: rgba(200, 60, 60, 0.9);
+  --notification: #E05252;
+
+  /* Radius */
+  --radius-lg: 24px;
   --radius-md: 16px;
   --radius-pill: 100px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 2px 12px rgba(196, 98, 45, 0.06);
+  --shadow-card: 0 2px 16px rgba(196, 98, 45, 0.08);
+  --shadow-modal: 0 8px 40px rgba(196, 98, 45, 0.12);
+  --shadow-btn: 0 4px 12px rgba(224, 122, 79, 0.35);
 }
 
 *,
@@ -31,7 +58,7 @@ body {
 body {
   font-family: 'Noto Sans TC', sans-serif;
   font-weight: 300;
-  background: #F5C8A8;
+  background: var(--bg-bottom);
   color: var(--text);
   min-height: 100dvh;
 }

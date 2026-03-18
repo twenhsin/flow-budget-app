@@ -54,7 +54,7 @@ const hasNotification = useState('hasNotification', () => false)
   padding: 12px 8px calc(12px + env(safe-area-inset-bottom));
   background: rgba(253, 240, 230, 0.92);
   backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(196, 168, 130, 0.25);
+  border-top: 1px solid var(--border);
   position: fixed;
   bottom: 0;
   left: 50%;
@@ -82,7 +82,7 @@ const hasNotification = useState('hasNotification', () => false)
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #E05252;
+  background: var(--notification);
   display: none;
 }
 
@@ -100,7 +100,7 @@ const hasNotification = useState('hasNotification', () => false)
 }
 
 .nav-item.active .nav-icon {
-  color: #EC844C;
+  color: var(--accent);
 }
 
 .nav-label {
@@ -110,7 +110,7 @@ const hasNotification = useState('hasNotification', () => false)
 }
 
 .nav-item.active .nav-label {
-  color: #EC844C;
+  color: var(--accent);
   font-weight: 500;
 }
 </style>
