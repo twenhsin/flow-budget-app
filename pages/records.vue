@@ -122,7 +122,7 @@
 
 <script setup lang="ts">
 import type { BudgetRecord } from '~/types'
-import { addGuestExpense, updateGuestExpense, deleteGuestExpense } from '~/composables/useGuestExpenses'
+import { updateGuestExpense, deleteGuestExpense } from '~/composables/useGuestExpenses'
 
 definePageMeta({ layout: 'default' })
 
@@ -269,19 +269,14 @@ const parseError = ref('')
 
 const saveNewRecord = async (record: BudgetRecord) => {
   isSaving.value = true
-  if (!user.value) {
-    addGuestExpense({ name: record.name, amount: record.amount, category: record.category, input_method: 'text' })
-  }
-  else {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('expenses').insert([{
-      name: record.name,
-      amount: record.amount,
-      category: record.category,
-      input_method: 'text',
-      user_id: user.value?.id ?? null,
-    }])
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('expenses').insert([{
+    name: record.name,
+    amount: record.amount,
+    category: record.category,
+    input_method: 'text',
+    user_id: user.value?.id ?? null,
+  }])
   isSaving.value = false
   await fetchRecords()
 }
