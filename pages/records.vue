@@ -272,7 +272,7 @@ const saveNewRecord = async (record: BudgetRecord) => {
       amount: record.amount,
       category: record.category,
       input_method: 'text',
-      user_id: user.value?.id,
+      user_id: user.value?.id ?? null,
     }])
   }
   isSaving.value = false
