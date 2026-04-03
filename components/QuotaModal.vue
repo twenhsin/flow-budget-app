@@ -1,14 +1,16 @@
 <template>
   <div
     class="quota-modal-overlay"
-    style="background: rgba(0, 0, 0, 0.35);"
+    style="background: rgba(0, 0, 0, 0.4);"
     @click.self="$emit('close')"
   >
     <div class="quota-modal-card">
       <div class="quota-modal-title">{{ title }}</div>
       <div class="quota-modal-desc">{{ desc }}</div>
-      <a href="mailto:wenhsin600@gmail.com" class="quota-modal-email">wenhsin600@gmail.com</a>
-      <button class="quota-modal-close-btn" @click="$emit('close')">關閉</button>
+      <div class="quota-modal-actions">
+        <button class="quota-btn quota-btn-outline" @click="$emit('close')">關閉</button>
+        <button class="quota-btn quota-btn-solid" @click="contact">與我聯繫</button>
+      </div>
     </div>
   </div>
 </template>
@@ -23,9 +25,13 @@ const title = computed(() =>
 
 const desc = computed(() =>
   props.reason === 'expired'
-    ? 'Demo 使用期限為 30 天，如需繼續使用請聯繫我'
-    : '你已使用完 10 次 Demo 額度，如需繼續使用請聯繫我',
+    ? 'Demo 使用期限為 30 天，如需繼續使用歡迎與我聯繫'
+    : '今日 10 次 Demo 額度已用完，如需繼續使用歡迎與我聯繫',
 )
+
+const contact = () => {
+  window.location.href = 'mailto:wenhsin600@gmail.com?subject=Filo Demo 使用申請'
+}
 </script>
 
 <style scoped>
@@ -41,14 +47,13 @@ const desc = computed(() =>
 
 .quota-modal-card {
   width: 100%;
-  max-width: 360px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 28px 24px 24px;
+  max-width: 320px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 1);
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  gap: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
@@ -56,34 +61,24 @@ const desc = computed(() =>
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
-  text-align: center;
 }
 
 .quota-modal-desc {
   font-size: 14px;
   color: var(--text-soft);
-  text-align: center;
   line-height: 1.6;
 }
 
-.quota-modal-email {
-  font-size: 14px;
-  color: var(--accent);
-  text-decoration: none;
-  margin-top: 2px;
+.quota-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
 }
 
-.quota-modal-email:active {
-  opacity: 0.7;
-}
-
-.quota-modal-close-btn {
-  margin-top: 8px;
-  padding: 10px 32px;
-  border-radius: 100px;
-  border: none;
-  background: var(--accent);
-  color: white;
+.quota-btn {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 999px;
   font-size: 14px;
   font-family: 'Noto Sans TC', sans-serif;
   font-weight: 500;
@@ -91,7 +86,19 @@ const desc = computed(() =>
   transition: opacity 0.18s;
 }
 
-.quota-modal-close-btn:active {
-  opacity: 0.8;
+.quota-btn:active {
+  opacity: 0.7;
+}
+
+.quota-btn-outline {
+  border: 1.5px solid var(--text-soft);
+  background: transparent;
+  color: var(--text-soft);
+}
+
+.quota-btn-solid {
+  border: none;
+  background: var(--accent);
+  color: white;
 }
 </style>
