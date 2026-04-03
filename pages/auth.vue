@@ -58,6 +58,7 @@ definePageMeta({ layout: false })
 const supabase = useSupabaseClient() as any
 const router = useRouter()
 const { mergeLocalToSupabase } = useUserCategories()
+const { mergeQuotaOnLogin } = useQuota()
 
 const mode = ref<'login' | 'signup'>('login')
 const email = ref('')
@@ -73,11 +74,18 @@ watch(mode, () => {
 
 // ── 訪客消費紀錄合併到 Supabase ───────────────────────────────────────────────
 const mergeLocalExpensesToSupabase = async (): Promise<number> => {
-  const local = getGuestExpenses()
-  if (local.length === 0) return 0
-
   const { data: { user: currentUser } } = await supabase.auth.getUser()
   if (!currentUser) return 0
+
+  // 步驟一：將 Supabase 中 user_id = null 的訪客資料歸屬到登入帳號（永遠執行）
+  await supabase
+    .from('expenses')
+    .update({ user_id: currentUser.id })
+    .is('user_id', null)
+
+  // 步驟二：將 localStorage 的 guest_expenses 寫入 Supabase（有資料才執行）
+  const local = getGuestExpenses()
+  if (local.length === 0) return 0
 
   // 取出 Supabase 既有紀錄，用於重複判斷
   const { data: existing } = await supabase
@@ -148,6 +156,7 @@ const handleSubmit = async () => {
     else {
       const syncedCount = await mergeLocalExpensesToSupabase()
       await mergeLocalToSupabase()
+      await mergeQuotaOnLogin()
       if (syncedCount > 0) {
         successMsg.value = `已將 ${syncedCount} 筆本地紀錄同步到雲端`
         await new Promise(resolve => setTimeout(resolve, 1500))
