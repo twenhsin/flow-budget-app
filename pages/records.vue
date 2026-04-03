@@ -60,6 +60,7 @@
     </div>
 
     <!-- Bottom Input Bar (in-flow, above nav) -->
+    <div v-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
     <div class="input-bar-wrap">
       <div class="input-bar">
         <input
@@ -130,6 +131,12 @@ const user = useSupabaseUser()
 const { parseTextEntry, parseTextEntryAI } = useRecords()
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
+const quotaRemaining = ref<number | null>(null)
+
+const refreshRemaining = async () => {
+  const q = await checkQuota()
+  quotaRemaining.value = (q.remaining !== null && q.remaining <= 3) ? q.remaining : null
+}
 
 // Month state
 const today = new Date()
@@ -210,6 +217,7 @@ const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
 
 onMounted(async () => {
   await loadCategories()
+  await refreshRemaining()
 })
 
 // Edit
@@ -301,6 +309,7 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   try {
     await saveNewRecord(await parseTextEntryAI(val))
     await incrementQuota()
+    await refreshRemaining()
   }
   catch (err: unknown) {
     if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
@@ -321,6 +330,7 @@ const handleAddClick = async () => {
   try {
     await saveNewRecord(await parseTextEntryAI(val))
     await incrementQuota()
+    await refreshRemaining()
   }
   catch (err: unknown) {
     if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
@@ -332,15 +342,13 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   onFinal: async (text) => {
     const quota = await checkQuota()
     if (!quota.allowed) {
-      parseError.value = quota.reason === 'expired'
-        ? 'Demo 使用期限已到期（30天）'
-        : 'Demo 額度已用完（10次）'
-      setTimeout(() => { parseError.value = '' }, 4000)
+      quotaModalReason.value = quota.reason
       return
     }
     try {
       await saveNewRecord(await parseTextEntryAI(text))
       await incrementQuota()
+      await refreshRemaining()
     }
     catch { await saveNewRecord(parseTextEntry(text)) }
   },
@@ -348,6 +356,13 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 </script>
 
 <style scoped>
+.quota-remaining-hint {
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+  padding: 4px 0;
+}
+
 .records-screen {
   display: flex;
   flex-direction: column;

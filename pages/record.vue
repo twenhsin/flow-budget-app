@@ -12,6 +12,7 @@
       />
     </div>
 
+    <div v-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
     <div class="action-bar">
       <div class="action-pill" :class="{ 'action-pill--full': mode === 'text' && !isConfirmMode }">
         <button class="action-side-btn" @click="handleCancel">
@@ -101,6 +102,12 @@ const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, par
 const hasNotification = useState('hasNotification', () => false)
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
+const quotaRemaining = ref<number | null>(null)
+
+const refreshRemaining = async () => {
+  const q = await checkQuota()
+  quotaRemaining.value = (q.remaining !== null && q.remaining <= 3) ? q.remaining : null
+}
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
 const isConfirmMode = computed(() => route.query.mode === 'confirm')
@@ -121,6 +128,7 @@ const { isListening, interimTranscript, startVoice, stopVoice, toggleVoice } = u
     try {
       addRecord(await parseTextEntryAI(text))
       await incrementQuota()
+      await refreshRemaining()
     }
     catch { addRecord(parseTextEntry(text)) }
   },
@@ -131,8 +139,9 @@ const formattedDate = computed(() => {
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (mode.value === 'voice') startVoice()
+  await refreshRemaining()
 })
 
 const handleTextEnter = async (e: KeyboardEvent) => {
@@ -151,6 +160,7 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   try {
     addRecord(await parseTextEntryAI(val))
     await incrementQuota()
+    await refreshRemaining()
   }
   catch (err: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -180,6 +190,7 @@ const handleTextAdd = async () => {
   try {
     addRecord(await parseTextEntryAI(val))
     await incrementQuota()
+    await refreshRemaining()
   }
   catch (err: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,6 +260,13 @@ const confirmRecord = async () => {
 </script>
 
 <style scoped>
+.quota-remaining-hint {
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+  padding-bottom: 6px;
+}
+
 .record-screen {
   display: flex;
   flex-direction: column;

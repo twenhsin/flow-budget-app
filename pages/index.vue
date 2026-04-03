@@ -19,6 +19,7 @@
 
       <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
 
+      <div v-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
       <div class="input-bar">
         <input
           ref="textInput"
@@ -69,6 +70,14 @@ const { clearRecords, addRecord, parseTextEntry, parseTextEntryAI } = useRecords
 const { categories } = useUserCategories()
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
+const quotaRemaining = ref<number | null>(null)
+
+const refreshRemaining = async () => {
+  const q = await checkQuota()
+  quotaRemaining.value = (q.remaining !== null && q.remaining <= 3) ? q.remaining : null
+}
+
+onMounted(refreshRemaining)
 
 // Tabs
 const activeTab = ref<HomeTab>('record')
@@ -126,6 +135,7 @@ const handleSubmit = async () => {
     try {
       addRecord(await parseTextEntryAI(val))
       await incrementQuota()
+      await refreshRemaining()
     }
     catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,6 +196,13 @@ const goCamera = () => {
 </script>
 
 <style scoped>
+.quota-remaining-hint {
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
 .home-screen {
   display: flex;
   flex-direction: column;

@@ -507,6 +507,7 @@
     <!-- Bottom input bar -->
     <div class="qr-input-wrap">
       <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
+      <div v-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
       <div class="qr-input-row">
         <button class="qr-back-btn" @click="navigateTo('/')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -674,6 +675,12 @@ const { categories, getCatColor, load: loadCategories } = useUserCategories()
 const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
+const quotaRemaining = ref<number | null>(null)
+
+const refreshRemaining = async () => {
+  const q = await checkQuota()
+  quotaRemaining.value = (q.remaining !== null && q.remaining <= 3) ? q.remaining : null
+}
 
 const handleSubmit = async () => {
   const q = inputValue.value.trim()
@@ -702,6 +709,7 @@ const handleSubmit = async () => {
     })
     result.value = data
     await incrementQuota()
+    await refreshRemaining()
   }
   catch (e: unknown) {
     const apiMsg = (e as { data?: { message?: string } })?.data?.message
@@ -725,6 +733,7 @@ function groupDisplayLabel(g: GroupEntry): string {
 
 onMounted(async () => {
   await loadCategories()
+  await refreshRemaining()
 })
 
 // ── Top N ──────────────────────────────────────────────────────────────────────
@@ -1007,6 +1016,13 @@ const monthlyBars = computed(() => {
 </script>
 
 <style scoped>
+.quota-remaining-hint {
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+  padding: 4px 0;
+}
+
 .qr-screen {
   display: flex;
   flex-direction: column;
