@@ -19,7 +19,8 @@
 
       <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
 
-      <div v-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
+      <div v-if="showSuccessToast" class="record-success-toast">已記錄 ✓</div>
+      <div v-else-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
       <div class="input-bar">
         <input
           ref="textInput"
@@ -65,8 +66,9 @@ import { getGuestExpenses } from '~/composables/useGuestExpenses'
 
 definePageMeta({ layout: 'default' })
 
+const supabase = useSupabaseClient()
 const user = useSupabaseUser()
-const { clearRecords, addRecord, parseTextEntry, parseTextEntryAI } = useRecords()
+const { clearRecords, parseTextEntry, parseTextEntryAI } = useRecords()
 const { categories } = useUserCategories()
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
@@ -104,6 +106,12 @@ const textInput = ref<HTMLInputElement | null>(null)
 const inputValue = ref('')
 const isQuerying = ref(false)
 const queryError = ref('')
+const showSuccessToast = ref(false)
+
+const showToast = () => {
+  showSuccessToast.value = true
+  setTimeout(() => { showSuccessToast.value = false }, 2000)
+}
 
 interface QueryResult {
   title: string
@@ -131,22 +139,38 @@ const handleSubmit = async () => {
 
   if (activeTab.value === 'record') {
     inputValue.value = ''
-    clearRecords()
+    isQuerying.value = true
     try {
-      addRecord(await parseTextEntryAI(val))
+      let record
+      try {
+        record = await parseTextEntryAI(val)
+      }
+      catch (e: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((e as any)?.data?.message === 'off_topic') {
+          queryError.value = '請輸入消費紀錄，例如：午餐100元'
+          setTimeout(() => { queryError.value = '' }, 4000)
+          isQuerying.value = false
+          return
+        }
+        record = parseTextEntry(val)
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('expenses').insert([{
+        name: record.name,
+        amount: record.amount,
+        category: record.category,
+        input_method: 'text',
+        user_id: user.value?.id ?? null,
+      }])
       await incrementQuota()
       await refreshRemaining()
+      clearRecords()
+      showToast()
     }
-    catch (e: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((e as any)?.data?.message === 'off_topic') {
-        queryError.value = '請輸入消費紀錄，例如：午餐100元'
-        setTimeout(() => { queryError.value = '' }, 4000)
-        return
-      }
-      addRecord(parseTextEntry(val))
+    finally {
+      isQuerying.value = false
     }
-    navigateTo('/record?mode=confirm')
     return
   }
 
@@ -196,6 +220,17 @@ const goCamera = () => {
 </script>
 
 <style scoped>
+.record-success-toast {
+  font-size: 14px;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 6px;
+  padding: 6px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  align-self: center;
+}
+
 .quota-remaining-hint {
   font-size: 12px;
   color: var(--accent);
