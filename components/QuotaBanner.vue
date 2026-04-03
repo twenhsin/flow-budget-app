@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="quota-banner">
-    <span class="quota-banner-text">Demo 模式・總共 10 次 AI 使用額度，30 天內有效</span>
+    <span class="quota-banner-text">Demo模式，每日使用AI次數共計10次。可使用期限為30天</span>
     <button class="quota-banner-close" aria-label="關閉" @click="dismiss">✕</button>
   </div>
 </template>
@@ -24,18 +24,28 @@ const dismiss = () => {
 
 <style scoped>
 .quota-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 382px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 16px;
-  position: relative;
-  z-index: 2;
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  z-index: 50;
 }
 
 .quota-banner-text {
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-soft);
   line-height: 1.4;
+  letter-spacing: 0.04em;
 }
 
 .quota-banner-close {
@@ -43,7 +53,7 @@ const dismiss = () => {
   margin-left: 8px;
   background: transparent;
   border: none;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-soft);
   cursor: pointer;
   padding: 2px 4px;

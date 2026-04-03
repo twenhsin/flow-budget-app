@@ -121,7 +121,7 @@
 
 <script setup lang="ts">
 import type { BudgetRecord } from '~/types'
-import { getGuestExpenses, addGuestExpense, updateGuestExpense, deleteGuestExpense } from '~/composables/useGuestExpenses'
+import { addGuestExpense, updateGuestExpense, deleteGuestExpense } from '~/composables/useGuestExpenses'
 
 definePageMeta({ layout: 'default' })
 
@@ -186,21 +186,17 @@ const fetchRecords = async () => {
   const toYear = month.value === 12 ? year.value + 1 : year.value
   const to = `${toYear}-${String(toMonth).padStart(2, '0')}-01`
 
-  if (!user.value) {
-    const all = getGuestExpenses()
-    allRecords.value = all.filter(r => r.created_at >= from && r.created_at < to)
-    isLoading.value = false
-    return
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  let q = (supabase as any)
     .from('expenses')
     .select('*')
-    .eq('user_id', user.value?.id)
     .gte('created_at', from)
     .lt('created_at', to)
     .order('created_at', { ascending: false })
+
+  q = user.value ? q.eq('user_id', user.value.id) : q.is('user_id', null)
+
+  const { data } = await q
   allRecords.value = data ?? []
   isLoading.value = false
 }

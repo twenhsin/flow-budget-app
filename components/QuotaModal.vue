@@ -1,5 +1,9 @@
 <template>
-  <div class="quota-modal-overlay" @click.self="$emit('close')">
+  <div
+    class="quota-modal-overlay"
+    style="background: rgba(0, 0, 0, 0.35);"
+    @click.self="$emit('close')"
+  >
     <div class="quota-modal-card">
       <div class="quota-modal-title">{{ title }}</div>
       <div class="quota-modal-desc">{{ desc }}</div>
@@ -28,7 +32,6 @@ const desc = computed(() =>
 .quota-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,9 +41,9 @@ const desc = computed(() =>
 
 .quota-modal-card {
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   border-radius: 24px;
-  background: rgba(255, 248, 242, 0.96);
+  background: rgba(255, 255, 255, 0.8);
   padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
@@ -57,14 +60,14 @@ const desc = computed(() =>
 }
 
 .quota-modal-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-soft);
   text-align: center;
   line-height: 1.6;
 }
 
 .quota-modal-email {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--accent);
   text-decoration: none;
   margin-top: 2px;
