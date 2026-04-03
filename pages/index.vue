@@ -54,6 +54,7 @@
       </div>
     </div>
     <div v-if="queryError" class="query-error-toast">{{ queryError }}</div>
+    <QuotaModal v-if="quotaModalReason" :reason="quotaModalReason" @close="quotaModalReason = null" />
   </div>
 </template>
 
@@ -66,6 +67,8 @@ definePageMeta({ layout: 'default' })
 const user = useSupabaseUser()
 const { clearRecords, addRecord, parseTextEntry, parseTextEntryAI } = useRecords()
 const { categories } = useUserCategories()
+const { checkQuota, incrementQuota } = useQuota()
+const quotaModalReason = ref<'quota' | 'expired' | null>(null)
 
 // Tabs
 const activeTab = ref<HomeTab>('record')
@@ -111,11 +114,18 @@ const handleSubmit = async () => {
   if (!val || isQuerying.value) return
   stopVoice()
 
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    quotaModalReason.value = quota.reason
+    return
+  }
+
   if (activeTab.value === 'record') {
     inputValue.value = ''
     clearRecords()
     try {
       addRecord(await parseTextEntryAI(val))
+      await incrementQuota()
     }
     catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,6 +155,7 @@ const handleSubmit = async () => {
       body,
     })
     queryResult.value = data
+    await incrementQuota()
     navigateTo('/query-result')
   }
   catch (e: unknown) {

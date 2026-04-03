@@ -85,6 +85,7 @@
 
     <!-- 錯誤 toast -->
     <div v-if="saveError" class="save-error-toast">{{ saveError }}</div>
+    <QuotaModal v-if="quotaModalReason" :reason="quotaModalReason" @close="quotaModalReason = null" />
   </div>
 </template>
 
@@ -98,6 +99,8 @@ const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const { pendingRecords, addRecord, removeRecord, updateRecord, clearRecords, parseTextEntry, parseTextEntryAI } = useRecords()
 const hasNotification = useState('hasNotification', () => false)
+const { checkQuota, incrementQuota } = useQuota()
+const quotaModalReason = ref<'quota' | 'expired' | null>(null)
 
 const mode = computed<EntryMode>(() => (route.query.mode as EntryMode) || 'text')
 const isConfirmMode = computed(() => route.query.mode === 'confirm')
@@ -110,7 +113,15 @@ const saveError = ref('')
 
 const { isListening, interimTranscript, startVoice, stopVoice, toggleVoice } = useVoiceInput({
   onFinal: async (text) => {
-    try { addRecord(await parseTextEntryAI(text)) }
+    const quota = await checkQuota()
+    if (!quota.allowed) {
+      quotaModalReason.value = quota.reason
+      return
+    }
+    try {
+      addRecord(await parseTextEntryAI(text))
+      await incrementQuota()
+    }
     catch { addRecord(parseTextEntry(text)) }
   },
 })
@@ -128,9 +139,18 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   const input = e.target as HTMLInputElement
   const val = input.value.trim()
   if (!val) return
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    saveError.value = quota.reason === 'expired'
+      ? 'Demo 使用期限已到期（30天）'
+      : 'Demo 額度已用完（10次）'
+    setTimeout(() => { saveError.value = '' }, 4000)
+    return
+  }
   input.value = ''
   try {
     addRecord(await parseTextEntryAI(val))
+    await incrementQuota()
   }
   catch (err: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -147,10 +167,19 @@ const handleTextAdd = async () => {
   if (!input) return
   const val = input.value.trim()
   if (!val) return
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    saveError.value = quota.reason === 'expired'
+      ? 'Demo 使用期限已到期（30天）'
+      : 'Demo 額度已用完（10次）'
+    setTimeout(() => { saveError.value = '' }, 4000)
+    return
+  }
   input.value = ''
   input.focus()
   try {
     addRecord(await parseTextEntryAI(val))
+    await incrementQuota()
   }
   catch (err: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

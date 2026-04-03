@@ -115,6 +115,7 @@
 
     <!-- Parse error toast -->
     <div v-if="parseError" class="parse-error-toast">{{ parseError }}</div>
+    <QuotaModal v-if="quotaModalReason" :reason="quotaModalReason" @close="quotaModalReason = null" />
   </div>
 </template>
 
@@ -127,6 +128,8 @@ definePageMeta({ layout: 'default' })
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const { parseTextEntry, parseTextEntryAI } = useRecords()
+const { checkQuota, incrementQuota } = useQuota()
+const quotaModalReason = ref<'quota' | 'expired' | null>(null)
 
 // Month state
 const today = new Date()
@@ -293,9 +296,15 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   const input = e.target as HTMLInputElement
   const val = input.value.trim()
   if (!val) return
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    quotaModalReason.value = quota.reason
+    return
+  }
   input.value = ''
   try {
     await saveNewRecord(await parseTextEntryAI(val))
+    await incrementQuota()
   }
   catch (err: unknown) {
     if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
@@ -307,9 +316,15 @@ const handleAddClick = async () => {
   if (!input) return
   const val = input.value.trim()
   if (!val) return
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    quotaModalReason.value = quota.reason
+    return
+  }
   input.value = ''
   try {
     await saveNewRecord(await parseTextEntryAI(val))
+    await incrementQuota()
   }
   catch (err: unknown) {
     if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
@@ -319,7 +334,18 @@ const handleAddClick = async () => {
 // Voice
 const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   onFinal: async (text) => {
-    try { await saveNewRecord(await parseTextEntryAI(text)) }
+    const quota = await checkQuota()
+    if (!quota.allowed) {
+      parseError.value = quota.reason === 'expired'
+        ? 'Demo 使用期限已到期（30天）'
+        : 'Demo 額度已用完（10次）'
+      setTimeout(() => { parseError.value = '' }, 4000)
+      return
+    }
+    try {
+      await saveNewRecord(await parseTextEntryAI(text))
+      await incrementQuota()
+    }
     catch { await saveNewRecord(parseTextEntry(text)) }
   },
 })

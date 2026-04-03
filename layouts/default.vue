@@ -5,6 +5,7 @@
     <div class="orb orb-2" aria-hidden="true" />
     <div class="orb orb-3" aria-hidden="true" />
     <div class="layout-content">
+      <QuotaBanner />
       <slot />
     </div>
     <BottomNav />

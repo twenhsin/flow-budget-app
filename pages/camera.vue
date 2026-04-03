@@ -31,6 +31,7 @@
 
     <!-- Error toast -->
     <div v-if="errorMsg" class="error-toast">{{ errorMsg }}</div>
+    <QuotaModal v-if="quotaModalReason" :reason="quotaModalReason" @close="quotaModalReason = null" />
 
     <!-- Floating controls -->
     <div class="camera-controls">
@@ -55,6 +56,8 @@
 definePageMeta({ layout: 'bare' })
 
 const { clearRecords, addRecord } = useRecords()
+const { checkQuota, incrementQuota } = useQuota()
+const quotaModalReason = ref<'quota' | 'expired' | null>(null)
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -91,6 +94,12 @@ const takePhoto = async () => {
   const canvas = canvasRef.value
   if (!video || !canvas) return
 
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    quotaModalReason.value = quota.reason
+    return
+  }
+
   canvas.width = video.videoWidth
   canvas.height = video.videoHeight
   canvas.getContext('2d')?.drawImage(video, 0, 0)
@@ -111,6 +120,7 @@ const takePhoto = async () => {
     for (const item of result.items) {
       addRecord({ name: item.name, amount: item.amount, category: item.category })
     }
+    await incrementQuota()
     if (result.fallback) {
       errorMsg.value = '無法自動辨識，請手動輸入'
       setTimeout(() => { errorMsg.value = '' }, 4000)

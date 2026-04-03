@@ -544,6 +544,7 @@
       </div>
       <div v-if="errorMsg" class="qr-error">{{ errorMsg }}</div>
     </div>
+    <QuotaModal v-if="quotaModalReason" :reason="quotaModalReason" @close="quotaModalReason = null" />
   </div>
 </template>
 
@@ -671,11 +672,20 @@ import { catColor as catColorBuiltin } from '~/constants/categories'
 const user = useSupabaseUser()
 const { categories, getCatColor, load: loadCategories } = useUserCategories()
 const catColor = (name: string) => getCatColor(name) ?? catColorBuiltin(name)
+const { checkQuota, incrementQuota } = useQuota()
+const quotaModalReason = ref<'quota' | 'expired' | null>(null)
 
 const handleSubmit = async () => {
   const q = inputValue.value.trim()
   if (!q || isLoading.value) return
   stopVoice()
+
+  const quota = await checkQuota()
+  if (!quota.allowed) {
+    quotaModalReason.value = quota.reason
+    return
+  }
+
   inputValue.value = ''
   isLoading.value = true
   errorMsg.value = ''
@@ -691,6 +701,7 @@ const handleSubmit = async () => {
       body,
     })
     result.value = data
+    await incrementQuota()
   }
   catch (e: unknown) {
     const apiMsg = (e as { data?: { message?: string } })?.data?.message
