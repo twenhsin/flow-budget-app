@@ -254,8 +254,10 @@ const confirmRecord = async () => {
     return
   }
 
-  hasNotification.value = true
-  navigateTo('/complete')
+  const savedCount = useState<number>('savedCount', () => 0)
+  savedCount.value = rows.length
+  clearRecords()
+  navigateTo('/')
 }
 </script>
 

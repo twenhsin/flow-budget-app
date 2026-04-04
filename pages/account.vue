@@ -64,6 +64,17 @@
             </svg>
           </button>
         </div>
+
+        <div class="demo-card">
+          <div class="demo-title">Demo 模式說明</div>
+          <ul class="demo-list">
+            <li>每日總共10次AI使用次數（記帳＋查詢）</li>
+            <li>首次使用起 30 天內有效</li>
+            <li>使用期限後，仍可瀏覽過去紀錄，但無法進行記帳與查詢等 AI 功能</li>
+            <li>如需繼續使用，請與我聯繫</li>
+          </ul>
+          <button class="demo-apply-btn" @click="applyDemo">申請使用</button>
+        </div>
       </template>
     </div>
 
@@ -86,6 +97,10 @@ const handleLogout = async () => {
 }
 
 const goSignup = () => navigateTo('/auth?tab=signup')
+
+const applyDemo = () => {
+  window.location.href = 'mailto:wenhsin600@gmail.com?subject=Filo Demo 申請使用'
+}
 </script>
 
 <style scoped>
@@ -228,4 +243,52 @@ const goSignup = () => navigateTo('/auth?tab=signup')
 .logout-row:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .nav-spacer { flex-shrink: 0; height: calc(72px + env(safe-area-inset-bottom)); }
+
+.demo-card {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.demo-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.demo-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-list li {
+  font-size: 14px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.demo-apply-btn {
+  align-self: center;
+  margin-top: 4px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.18s;
+}
+
+.demo-apply-btn:active {
+  opacity: 0.8;
+}
 </style>

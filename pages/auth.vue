@@ -40,10 +40,13 @@
         <p v-if="errorMsg" class="auth-error">{{ errorMsg }}</p>
         <p v-if="successMsg" class="auth-success">{{ successMsg }}</p>
 
-        <button type="submit" class="auth-btn" :disabled="isLoading">
-          <span v-if="isLoading">處理中…</span>
-          <span v-else>{{ mode === 'login' ? '登入' : '建立帳號' }}</span>
-        </button>
+        <div class="auth-btn-row">
+          <button type="button" class="auth-btn-back" @click="navigateTo('/')">返回</button>
+          <button type="submit" class="auth-btn" :disabled="isLoading">
+            <span v-if="isLoading">處理中…</span>
+            <span v-else>{{ mode === 'login' ? '登入' : '註冊' }}</span>
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -353,11 +356,35 @@ const handleSubmit = async () => {
   line-height: 1.5;
 }
 
-.auth-btn {
+.auth-btn-row {
+  display: flex;
+  gap: 8px;
   margin-top: 4px;
+}
+
+.auth-btn-back {
+  flex: 1;
+  padding: 14px;
+  border: 1.5px solid var(--text-soft);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.auth-btn-back:active {
+  transform: scale(0.97);
+}
+
+.auth-btn {
+  flex: 1;
   padding: 14px;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: 999px;
   background: var(--accent);
   color: white;
   font-family: 'Noto Sans TC', sans-serif;

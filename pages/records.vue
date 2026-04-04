@@ -40,8 +40,11 @@
             <span class="group-subtotal">-{{ group.subtotal }}</span>
           </div>
           <div v-for="(record, i) in group.records" :key="record.id ?? i" class="record-row">
-            <div class="cat-icon" :style="{ background: catColor(record.category) }">
-              <CatIcon :category="record.category" :size="14" :stroke-width="1.8" />
+            <div class="cat-icon-wrap">
+              <div class="cat-icon" :style="{ background: catColor(record.category) }">
+                <CatIcon :category="record.category" :size="14" :stroke-width="1.8" />
+              </div>
+              <div v-if="record.id && newItemIds.includes(record.id)" class="cat-new-dot" />
             </div>
             <div class="row-info">
               <span class="row-name">{{ record.name }}</span>
@@ -114,6 +117,9 @@
       <div class="saving-spinner" />
     </div>
 
+    <!-- Record success toast -->
+    <div v-if="showRecordToast" class="record-success-toast">已成功記錄</div>
+
     <!-- Parse error toast -->
     <div v-if="parseError" class="parse-error-toast">{{ parseError }}</div>
     <QuotaModal v-if="quotaModalReason" :reason="quotaModalReason" @close="quotaModalReason = null" />
@@ -132,6 +138,21 @@ const { parseTextEntry, parseTextEntryAI } = useRecords()
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
 const quotaRemaining = ref<number | null>(null)
+const hasNotification = useState('hasNotification', () => false)
+const showRecordToast = ref(false)
+const newItemIds = ref<string[]>([])
+
+const triggerSuccess = (ids: string[]) => {
+  hasNotification.value = true
+  showRecordToast.value = true
+  newItemIds.value = [...newItemIds.value, ...ids]
+  setTimeout(() => { showRecordToast.value = false }, 3000)
+}
+
+onUnmounted(() => {
+  hasNotification.value = false
+  newItemIds.value = []
+})
 
 const refreshRemaining = async () => {
   const q = await checkQuota()
@@ -267,18 +288,19 @@ const deleteRecord = async () => {
 const textInput = ref<HTMLInputElement | null>(null)
 const parseError = ref('')
 
-const saveNewRecord = async (record: BudgetRecord) => {
+const saveNewRecord = async (record: BudgetRecord): Promise<string[]> => {
   isSaving.value = true
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('expenses').insert([{
+  const { data } = await (supabase as any).from('expenses').insert([{
     name: record.name,
     amount: record.amount,
     category: record.category,
     input_method: 'text',
     user_id: user.value?.id ?? null,
-  }])
+  }]).select('id')
   isSaving.value = false
   await fetchRecords()
+  return (data ?? []).map((r: { id: string }) => r.id)
 }
 
 const handleParseError = (e: unknown) => {
@@ -302,9 +324,10 @@ const handleTextEnter = async (e: KeyboardEvent) => {
   }
   input.value = ''
   try {
-    await saveNewRecord(await parseTextEntryAI(val))
+    const ids = await saveNewRecord(await parseTextEntryAI(val))
     await incrementQuota()
     await refreshRemaining()
+    triggerSuccess(ids)
   }
   catch (err: unknown) {
     if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
@@ -323,9 +346,10 @@ const handleAddClick = async () => {
   }
   input.value = ''
   try {
-    await saveNewRecord(await parseTextEntryAI(val))
+    const ids = await saveNewRecord(await parseTextEntryAI(val))
     await incrementQuota()
     await refreshRemaining()
+    triggerSuccess(ids)
   }
   catch (err: unknown) {
     if (!handleParseError(err)) await saveNewRecord(parseTextEntry(val))
@@ -341,9 +365,10 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
       return
     }
     try {
-      await saveNewRecord(await parseTextEntryAI(text))
+      const ids = await saveNewRecord(await parseTextEntryAI(text))
       await incrementQuota()
       await refreshRemaining()
+      triggerSuccess(ids)
     }
     catch { await saveNewRecord(parseTextEntry(text)) }
   },
@@ -351,6 +376,24 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
 </script>
 
 <style scoped>
+.record-success-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 382px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  text-align: center;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+}
+
 .quota-remaining-hint {
   font-size: 12px;
   color: var(--accent);
@@ -613,6 +656,11 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   border-bottom: none;
 }
 
+.cat-icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .cat-icon {
   width: 30px;
   height: 30px;
@@ -620,7 +668,16 @@ const { isListening, interimTranscript, toggleVoice } = useVoiceInput({
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+}
+
+.cat-new-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .row-info {

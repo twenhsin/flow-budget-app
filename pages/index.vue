@@ -15,12 +15,12 @@
         >
           {{ tab.label }}
         </button>
+        <span v-if="quotaRemaining !== null" class="quota-remaining-hint">剩 {{ quotaRemaining }} 次使用額度</span>
       </div>
 
       <ListeningIndicator :visible="isListening" :transcript="interimTranscript" />
 
-      <div v-if="showSuccessToast" class="record-success-toast">已記錄 ✓</div>
-      <div v-else-if="quotaRemaining !== null" class="quota-remaining-hint">還剩 {{ quotaRemaining }} 次使用額度</div>
+      <div v-if="showSuccessToast" class="record-success-toast">{{ successToastMsg }}</div>
       <div class="input-bar">
         <input
           ref="textInput"
@@ -66,9 +66,8 @@ import { getGuestExpenses } from '~/composables/useGuestExpenses'
 
 definePageMeta({ layout: 'default' })
 
-const supabase = useSupabaseClient()
 const user = useSupabaseUser()
-const { clearRecords, parseTextEntry, parseTextEntryAI } = useRecords()
+const { clearRecords, addRecord, parseTextEntry, parseTextEntryAI } = useRecords()
 const { categories } = useUserCategories()
 const { checkQuota, incrementQuota } = useQuota()
 const quotaModalReason = ref<'quota' | 'expired' | null>(null)
@@ -79,7 +78,14 @@ const refreshRemaining = async () => {
   quotaRemaining.value = (q.remaining !== null && q.remaining <= 3) ? q.remaining : null
 }
 
-onMounted(refreshRemaining)
+onMounted(async () => {
+  await refreshRemaining()
+  const savedCount = useState<number>('savedCount', () => 0)
+  if (savedCount.value > 0) {
+    showToast(`已成功記錄 ${savedCount.value} 筆消費`)
+    savedCount.value = 0
+  }
+})
 
 // Tabs
 const activeTab = ref<HomeTab>('record')
@@ -107,10 +113,12 @@ const inputValue = ref('')
 const isQuerying = ref(false)
 const queryError = ref('')
 const showSuccessToast = ref(false)
+const successToastMsg = ref('')
 
-const showToast = () => {
+const showToast = (msg: string) => {
+  successToastMsg.value = msg
   showSuccessToast.value = true
-  setTimeout(() => { showSuccessToast.value = false }, 2000)
+  setTimeout(() => { showSuccessToast.value = false }, 3000)
 }
 
 interface QueryResult {
@@ -139,38 +147,20 @@ const handleSubmit = async () => {
 
   if (activeTab.value === 'record') {
     inputValue.value = ''
-    isQuerying.value = true
+    clearRecords()
     try {
-      let record
-      try {
-        record = await parseTextEntryAI(val)
-      }
-      catch (e: unknown) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((e as any)?.data?.message === 'off_topic') {
-          queryError.value = '請輸入消費紀錄，例如：午餐100元'
-          setTimeout(() => { queryError.value = '' }, 4000)
-          isQuerying.value = false
-          return
-        }
-        record = parseTextEntry(val)
-      }
+      addRecord(await parseTextEntryAI(val))
+    }
+    catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('expenses').insert([{
-        name: record.name,
-        amount: record.amount,
-        category: record.category,
-        input_method: 'text',
-        user_id: user.value?.id ?? null,
-      }])
-      await incrementQuota()
-      await refreshRemaining()
-      clearRecords()
-      showToast()
+      if ((e as any)?.data?.message === 'off_topic') {
+        queryError.value = '請輸入消費紀錄，例如：午餐100元'
+        setTimeout(() => { queryError.value = '' }, 4000)
+        return
+      }
+      addRecord(parseTextEntry(val))
     }
-    finally {
-      isQuerying.value = false
-    }
+    navigateTo('/record?mode=confirm')
     return
   }
 
@@ -221,21 +211,26 @@ const goCamera = () => {
 
 <style scoped>
 .record-success-toast {
-  font-size: 14px;
-  color: var(--accent);
-  text-align: center;
-  margin-bottom: 6px;
-  padding: 6px 20px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  align-self: center;
-}
-
-.quota-remaining-hint {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 382px;
   font-size: 12px;
   color: var(--accent);
   text-align: center;
-  margin-bottom: 6px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+}
+
+.quota-remaining-hint {
+  font-size: 16px;
+  color: #8b5e3c;
+  margin-left: auto;
 }
 
 .home-screen {
