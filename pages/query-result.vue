@@ -1029,6 +1029,8 @@ const monthlyBars = computed(() => {
   height: 100dvh;
   overflow: hidden;
   position: relative;
+  width: 100%;
+  max-width: 430px;
   background-color: #fffaf0;
   background-image:
     radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
@@ -1824,6 +1826,8 @@ const monthlyBars = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .qr-back-btn {
@@ -1850,6 +1854,7 @@ const monthlyBars = computed(() => {
 
 .qr-input-bar {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   background: var(--surface);
