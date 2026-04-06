@@ -1029,6 +1029,8 @@ const monthlyBars = computed(() => {
   height: 100dvh;
   overflow: hidden;
   position: relative;
+  max-width: 430px;
+  margin: 0 auto;
   background-color: #fffaf0;
   background-image:
     radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
@@ -1818,9 +1820,6 @@ const monthlyBars = computed(() => {
   padding: 8px 16px calc(24px + env(safe-area-inset-bottom));
   position: relative;
   z-index: 1;
-  max-width: 430px;
-  width: 100%;
-  margin: 0 auto;
 }
 
 .qr-input-row {
