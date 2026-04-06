@@ -1029,8 +1029,6 @@ const monthlyBars = computed(() => {
   height: 100dvh;
   overflow: hidden;
   position: relative;
-  max-width: 430px;
-  margin: 0 auto;
   background-color: #fffaf0;
   background-image:
     radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
