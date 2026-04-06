@@ -1820,8 +1820,7 @@ const monthlyBars = computed(() => {
   z-index: 1;
   max-width: 430px;
   width: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  margin: 0 auto;
 }
 
 .qr-input-row {
