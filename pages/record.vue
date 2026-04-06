@@ -254,8 +254,8 @@ const confirmRecord = async () => {
     return
   }
 
-  const savedCount = useState<number>('savedCount', () => 0)
-  savedCount.value = rows.length
+  const hasNotification = useState('hasNotification', () => false)
+  hasNotification.value = true
   clearRecords()
   navigateTo('/')
 }
