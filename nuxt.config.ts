@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     openaiApiKey: process.env.OPENAI_API_KEY,
   },
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/supabase'],
+  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/supabase', '@vite-pwa/nuxt'],
   css: ['~/assets/css/main.css'],
   supabase: {
     redirect: false,
@@ -25,6 +25,49 @@ export default defineNuxtConfig({
       ],
     },
     pageTransition: { name: 'page', mode: 'out-in' },
+  },
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Filo — Flow 帳',
+      short_name: 'Filo',
+      description: '讓 AI 幫你整理每一筆消費',
+      lang: 'zh-TW',
+      theme_color: '#E07A4F',
+      background_color: '#FDF6F0',
+      display: 'standalone',
+      start_url: '/',
+      icons: [
+        {
+          src: '/icon/favicon-16.png',
+          sizes: '16x16',
+          type: 'image/png',
+        },
+        {
+          src: '/icon/favicon-32.png',
+          sizes: '32x32',
+          type: 'image/png',
+        },
+        {
+          src: '/icon/icon-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: '/icon/icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/',
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+    },
+    devOptions: {
+      enabled: false,
+    },
   },
   compatibilityDate: '2024-11-01',
 })
