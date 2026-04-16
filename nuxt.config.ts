@@ -10,13 +10,14 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: '帳 · Flow',
+      title: 'Filo',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover' },
       ],
       script: [{ src: 'https://mcp.figma.com/mcp/html-to-design/capture.js', async: true }],
       link: [
+        { rel: 'apple-touch-icon', href: '/icon/icon-192.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         {
           rel: 'stylesheet',
@@ -29,7 +30,7 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Filo — Flow 帳',
+      name: 'Filo',
       short_name: 'Filo',
       description: '讓 AI 幫你整理每一筆消費',
       lang: 'zh-TW',
