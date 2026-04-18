@@ -1,18 +1,31 @@
 <template>
-  <div class="layout-with-nav">
-    <!-- Background orbs (fixed, behind all content) -->
+  <div class="page-wrapper">
     <div class="orb orb-1" aria-hidden="true" />
     <div class="orb orb-2" aria-hidden="true" />
     <div class="orb orb-3" aria-hidden="true" />
-    <QuotaBanner />
-    <div class="layout-content">
-      <slot />
+    <div class="layout-with-nav">
+      <QuotaBanner />
+      <div class="layout-content">
+        <slot />
+      </div>
+      <BottomNav />
     </div>
-    <BottomNav />
   </div>
 </template>
 
 <style scoped>
+.page-wrapper {
+  position: relative;
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
+    radial-gradient(at 90% 10%, rgba(255,230,180,0.7) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(255,190,140,0.6) 0px, transparent 60%),
+    radial-gradient(at 20% 80%, rgba(255,210,190,0.5) 0px, transparent 50%),
+    radial-gradient(at 80% 90%, rgba(255,160,140,0.4) 0px, transparent 50%),
+    linear-gradient(135deg, #fffcf5 0%, #ffe4cc 40%, #ffd1b3 70%, #ffc0a0 100%);
+}
+
 .layout-with-nav {
   display: flex;
   flex-direction: column;
@@ -22,13 +35,7 @@
   margin: 0 auto;
   position: relative;
   overflow: hidden;
-  background-image:
-    radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
-    radial-gradient(at 90% 10%, rgba(255,230,180,0.7) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(255,190,140,0.6) 0px, transparent 60%),
-    radial-gradient(at 20% 80%, rgba(255,210,190,0.5) 0px, transparent 50%),
-    radial-gradient(at 80% 90%, rgba(255,160,140,0.4) 0px, transparent 50%),
-    linear-gradient(135deg, #fffcf5 0%, #ffe4cc 40%, #ffd1b3 70%, #ffc0a0 100%);
+  background: transparent;
 }
 
 .layout-content {
