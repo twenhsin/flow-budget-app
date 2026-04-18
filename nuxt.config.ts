@@ -69,6 +69,10 @@ export default defineNuxtConfig({
     devOptions: {
       enabled: false,
     },
+    client: {
+      installPrompt: false,
+      periodicSyncForUpdates: 3600,
+    },
   },
   compatibilityDate: '2024-11-01',
 })
