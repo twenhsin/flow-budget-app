@@ -22,7 +22,6 @@
   margin: 0 auto;
   position: relative;
   overflow: hidden;
-  background-color: #fffaf0;
   background-image:
     radial-gradient(at 10% 20%, rgba(255,245,220,0.8) 0px, transparent 50%),
     radial-gradient(at 90% 10%, rgba(255,230,180,0.7) 0px, transparent 50%),
