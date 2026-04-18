@@ -16,6 +16,7 @@
 <style scoped>
 .page-wrapper {
   width: 100%;
+  overflow: hidden;
   position: relative;
   min-height: 100dvh;
   background-image:
